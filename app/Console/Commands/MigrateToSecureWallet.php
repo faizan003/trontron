@@ -27,14 +27,30 @@ class MigrateToSecureWallet extends Command
             // Check if already migrated
             $existing = SecureWallet::where('wallet_type', 'admin')->where('is_active', true)->first();
             if ($existing) {
-                $this->warn('⚠️  Admin wallet already exists in secure storage');
+                // Check if the credentials are the same
+                if ($existing->verifyPrivateKey($adminPrivateKey)) {
+                    $this->info('✅ Admin wallet with same credentials already exists and is active');
+                    $this->info("📊 Wallet ID: {$existing->id}");
+                    $this->info("🔑 Address: " . $existing->getDecryptedAddress());
+                    return 0;
+                }
+
+                $this->warn('⚠️  Admin wallet already exists in secure storage with different credentials');
                 
                 if (!$this->confirm('Do you want to rotate to new credentials?')) {
                     return 0;
                 }
                 
-                // Deactivate existing
+                // Deactivate existing and clean up any old inactive wallets with same credentials
                 $existing->update(['is_active' => false]);
+                
+                // Clean up any old wallets with same new credentials to avoid constraint violation
+                $newKeyHash = hash('sha256', $adminPrivateKey);
+                SecureWallet::where('wallet_type', 'admin')
+                          ->where('key_hash', $newKeyHash)
+                          ->delete();
+                
+                $this->info('🔄 Rotating to new wallet credentials...');
             }
 
             // Store in encrypted database
@@ -61,6 +77,18 @@ class MigrateToSecureWallet extends Command
             $this->warn('1. Remove ADMIN_WALLET_* from your .env file');
             $this->warn('2. Update your application to use SecureWallet model');
             $this->warn('3. Restart your application');
+
+            // Clean up old inactive wallets (keep only last 3 for audit trail)
+            $oldWallets = SecureWallet::where('wallet_type', 'admin')
+                                    ->where('is_active', false)
+                                    ->orderBy('created_at', 'desc')
+                                    ->skip(3)
+                                    ->get();
+            
+            if ($oldWallets->count() > 0) {
+                $oldWallets->each->delete();
+                $this->info("🧹 Cleaned up {$oldWallets->count()} old wallet records");
+            }
 
             return 0;
 
