@@ -1,0 +1,1 @@
+artisan staking:process-daily-interest --force
