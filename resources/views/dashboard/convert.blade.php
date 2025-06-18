@@ -252,11 +252,11 @@ function updateUI(loading = false) {
         refreshButton.title = canRefresh ? 'Refresh balance' : `Wait ${Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastBalanceCheck)) / 1000)}s to refresh`;
 
         if (balanceStatus) {
-            if (!canRefresh) {
-                const remainingTime = Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastBalanceCheck)) / 1000);
-                balanceStatus.textContent = `Wait ${remainingTime}s to refresh`;
+        if (!canRefresh) {
+            const remainingTime = Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastBalanceCheck)) / 1000);
+            balanceStatus.textContent = `Wait ${remainingTime}s to refresh`;
                 balanceStatus.className = 'text-xs text-yellow-500 mt-1';
-            } else {
+        } else {
                 balanceStatus.textContent = `Last updated: ${new Date(lastBalanceCheck).toLocaleTimeString()}`;
                 balanceStatus.className = 'text-xs text-green-500 mt-1';
             }

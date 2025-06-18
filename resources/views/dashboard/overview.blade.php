@@ -551,11 +551,11 @@ function updateUI(loading = false) {
         refreshButton.title = canRefresh ? 'Refresh balance' : `Wait ${Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastBalanceCheck)) / 1000)}s to refresh`;
 
         if (balanceStatus) {
-            if (!canRefresh) {
-                const remainingTime = Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastBalanceCheck)) / 1000);
-                balanceStatus.textContent = `Wait ${remainingTime}s to refresh`;
+        if (!canRefresh) {
+            const remainingTime = Math.ceil((REFRESH_COOLDOWN - (Date.now() - lastBalanceCheck)) / 1000);
+            balanceStatus.textContent = `Wait ${remainingTime}s to refresh`;
                 balanceStatus.className = 'text-xs text-yellow-500 mt-1';
-            } else {
+        } else {
                 balanceStatus.textContent = `Last updated: ${new Date(lastBalanceCheck).toLocaleTimeString()}`;
                 balanceStatus.className = 'text-xs text-green-500 mt-1';
             }
@@ -695,29 +695,29 @@ document.addEventListener('visibilitychange', () => {
 async function copyToClipboard(text, event = null) {
     try {
         await navigator.clipboard.writeText(text);
-        
+
         // Show success notification
         showNotification('Address copied to clipboard!', 'success');
 
         // If event is provided, update the button that was clicked
         if (event && event.currentTarget) {
-            const button = event.currentTarget;
-            const originalHTML = button.innerHTML;
+        const button = event.currentTarget;
+        const originalHTML = button.innerHTML;
             const originalClasses = button.className;
 
-            // Change the button icon to checkmark and color to green
-            button.innerHTML = `
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            `;
+        // Change the button icon to checkmark and color to green
+        button.innerHTML = `
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+        `;
             button.className = button.className.replace('bg-blue-600', 'bg-green-600').replace('hover:bg-blue-700', 'hover:bg-green-700');
 
-            // Reset button after 2 seconds
-            setTimeout(() => {
-                button.innerHTML = originalHTML;
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            button.innerHTML = originalHTML;
                 button.className = originalClasses;
-            }, 2000);
+        }, 2000);
         }
 
     } catch (err) {
@@ -887,7 +887,7 @@ async function showDepositModal() {
         qrContainer.innerHTML = '<p class="text-red-600 text-sm">Wallet address not found</p>';
         return;
     }
-
+    
     try {
         // Use server-side QR code generation
         const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(address)}`;
