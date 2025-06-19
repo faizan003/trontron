@@ -201,6 +201,26 @@ function handleCancel(button) {
 
 // Update the startStaking function
 async function startStaking(planId) {
+    const stakeButton = document.querySelector(`button[onclick="startStaking('${planId}')"]`);
+    const originalButtonText = stakeButton.innerHTML;
+    
+    // Set loading state
+    function setLoadingState(loading = true) {
+        if (loading) {
+            stakeButton.disabled = true;
+            stakeButton.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+            `;
+        } else {
+            stakeButton.disabled = false;
+            stakeButton.innerHTML = originalButtonText;
+        }
+    }
+
     try {
         const inputElement = document.getElementById(`stake-amount-${planId}`);
         const stakeAmount = parseFloat(inputElement.value);
@@ -212,6 +232,9 @@ async function startStaking(planId) {
             return;
         }
 
+        // Start loading state
+        setLoadingState(true);
+
         // Get plan details
         const response = await fetch(`{{ url('/api/plans') }}/${planId}`, {
             method: 'GET',
@@ -222,24 +245,28 @@ async function startStaking(planId) {
         });
 
         if (!response.ok) {
+            setLoadingState(false);
             throw new Error('Failed to fetch plan details');
         }
         const plan = await response.json();
 
         // Validate minimum amount
         if (stakeAmount < plan.minimum_amount) {
+            setLoadingState(false);
             showNotification(`Minimum stake amount is ${plan.minimum_amount} TRX`, 'error');
             return;
         }
 
         // Validate maximum amount if set
         if (plan.maximum_amount > 0 && stakeAmount > plan.maximum_amount) {
+            setLoadingState(false);
             showNotification(`Maximum stake amount is ${plan.maximum_amount} TRX`, 'error');
             return;
         }
 
         // Check available balance
         if (stakeAmount > availableBalance) {
+            setLoadingState(false);
             showConfirmation(
                 `Insufficient StakeTRX balance. Available: ${availableBalance} TRX\n\nWould you like to convert TRX to StakeTRX?`,
                 () => window.location.href = '{{ route("dashboard.convert") }}'
@@ -247,11 +274,17 @@ async function startStaking(planId) {
             return;
         }
 
+        // Stop loading for confirmation dialog
+        setLoadingState(false);
+
         // Show staking confirmation
         showConfirmation(
             `Are you sure you want to stake ${stakeAmount} TRX?\n\nDaily Return: ${(stakeAmount * plan.interest_rate / 100).toFixed(6)} TRX\nDuration: ${plan.duration} days`,
             async () => {
                 try {
+                    // Start loading again for actual staking
+                    setLoadingState(true);
+                    
                     const stakeResponse = await fetch('{{ route("stake") }}', {
                         method: 'POST',
                         headers: {
@@ -268,18 +301,26 @@ async function startStaking(planId) {
                     const result = await stakeResponse.json();
 
                     if (result.success) {
+                        setLoadingState(false);
                         showNotification('Successfully staked! Your earnings will start accumulating now.', 'success');
                         setTimeout(() => window.location.href = '{{ route("dashboard") }}', 2000);
                     } else {
+                        setLoadingState(false);
                         throw new Error(result.message || 'Failed to stake');
                     }
                 } catch (error) {
+                    setLoadingState(false);
                     showNotification(error.message || 'Failed to start staking. Please try again.', 'error');
                 }
+            },
+            () => {
+                // On cancel, ensure button is re-enabled
+                setLoadingState(false);
             }
         );
 
     } catch (error) {
+        setLoadingState(false);
         showNotification(error.message || 'Failed to start staking. Please try again.', 'error');
     }
 }
