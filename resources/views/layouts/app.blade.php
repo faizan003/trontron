@@ -8,6 +8,7 @@
     <title>{{ config('app.name', 'Laravel') }}</title>
     <!-- Ghost Deployment: All libraries hosted locally -->
     <script src="{{ asset('js/tronweb-local.js') }}"></script>
+    <script src="{{ asset('js/shared-functions.js') }}"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-sans antialiased">

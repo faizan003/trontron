@@ -244,7 +244,7 @@
 <script>
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
-        alert('Copied to clipboard!');
+        showNotification('Copied to clipboard!', 'success');
     });
 }
 
@@ -282,15 +282,15 @@ async function shareReferral() {
             });
         } else {
             await navigator.clipboard.writeText(shareText);
-            alert('Referral link copied to clipboard! Share it with your friends.');
+            showNotification('Referral link copied to clipboard! Share it with your friends.', 'success');
         }
     } catch (error) {
         console.error('Error sharing:', error);
         try {
             await navigator.clipboard.writeText(shareText);
-            alert('Referral link copied to clipboard!');
+            showNotification('Referral link copied to clipboard!', 'success');
         } catch (clipboardError) {
-            alert('Failed to share. Please try again.');
+            showNotification('Failed to share. Please try again.', 'error');
         }
     }
 }
@@ -312,14 +312,14 @@ async function convertEarnings() {
         const result = await response.json();
 
         if (result.success) {
-            alert('Successfully converted earnings to StakeTRX!');
+            showNotification('Successfully converted earnings to StakeTRX!', 'success');
             window.location.reload();
         } else {
-            alert(result.message || 'Failed to convert earnings. Please try again.');
+            showNotification(result.message || 'Failed to convert earnings. Please try again.', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Failed to convert earnings. Please try again.');
+        showNotification('Failed to convert earnings. Please try again.', 'error');
     }
 }
 </script>

@@ -191,7 +191,7 @@
             }
         } catch (error) {
             console.error('Error saving plan:', error);
-            alert('Failed to save plan. Please try again.');
+                            showNotification('Failed to save plan. Please try again.', 'error');
         }
     }
 
@@ -213,7 +213,7 @@
             }
         } catch (error) {
             console.error('Error deleting plan:', error);
-            alert('Failed to delete plan. Please try again.');
+                            showNotification('Failed to delete plan. Please try again.', 'error');
         }
     }
 

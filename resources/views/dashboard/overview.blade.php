@@ -1044,26 +1044,7 @@ function copyAddress() {
 }
 
 // Add this if you don't already have a notification function
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    let bgColor = 'bg-green-500';
-    
-    if (type === 'error') bgColor = 'bg-red-500';
-    else if (type === 'info') bgColor = 'bg-blue-500';
-    else if (type === 'warning') bgColor = 'bg-yellow-500';
-    
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg ${bgColor} text-white shadow-lg transition-all transform translate-y-0 opacity-100`;
-
-    notification.innerHTML = message;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateY(-100%)';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
+// Using global notification system from shared-functions.js
 
 function toggleDebugInfo(stakingId) {
     const debugInfo = document.getElementById(`debug-info-${stakingId}`);

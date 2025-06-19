@@ -422,7 +422,7 @@ function acceptTerms() {
 
 function openPrivacyModal() {
     // You can create a similar modal for privacy policy
-    alert('Privacy Policy modal can be implemented similarly');
+                    showNotification('Privacy Policy modal can be implemented similarly', 'info');
 }
 
 // Password toggle function

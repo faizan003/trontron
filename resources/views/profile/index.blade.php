@@ -369,14 +369,14 @@ async function verify2FA() {
         const result = await response.json();
 
         if (result.success) {
-            alert('2FA enabled successfully!');
+            showNotification('2FA enabled successfully!', 'success');
             window.location.reload();
         } else {
-            alert(result.message || 'Invalid code. Please try again.');
+            showNotification(result.message || 'Invalid code. Please try again.', 'error');
         }
     } catch (error) {
         console.error('Error verifying 2FA:', error);
-        alert('Failed to verify code. Please try again.');
+        showNotification('Failed to verify code. Please try again.', 'error');
     }
 }
 
@@ -398,14 +398,14 @@ async function disable2FA() {
         const result = await response.json();
 
         if (result.success) {
-            alert('2FA disabled successfully!');
+            showNotification('2FA disabled successfully!', 'success');
             window.location.reload();
         } else {
-            alert('Failed to disable 2FA. Please try again.');
+            showNotification('Failed to disable 2FA. Please try again.', 'error');
         }
     } catch (error) {
         console.error('Error disabling 2FA:', error);
-        alert('Failed to disable 2FA. Please try again.');
+        showNotification('Failed to disable 2FA. Please try again.', 'error');
     }
 }
 
@@ -413,9 +413,9 @@ async function copyManualCode() {
     const code = document.getElementById('manualCode').textContent;
     try {
         await navigator.clipboard.writeText(code);
-        alert('Code copied to clipboard!');
+        showNotification('Code copied to clipboard!', 'success');
     } catch (err) {
-        alert('Failed to copy code');
+        showNotification('Failed to copy code', 'error');
     }
 }
 
@@ -572,15 +572,7 @@ async function copyPrivateKey() {
     }
 }
 
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg ${
-        type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } text-white`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
-}
+// Using global notification system from shared-functions.js
 
 async function shareReferral() {
     const referralCode = '{{ auth()->user()->referral_code }}';

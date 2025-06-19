@@ -144,47 +144,7 @@
 </style>
 
 <script>
-// Custom notification function
-function showNotification(message, type = 'success') {
-    const container = document.getElementById('notification-container').firstElementChild;
-    const notification = document.createElement('div');
-
-    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-
-    notification.className = `notification pointer-events-auto mb-3 p-4 ${bgColor} text-white rounded-lg shadow-lg flex items-center justify-between`;
-
-    notification.innerHTML = `
-        <div class="flex items-center">
-            ${type === 'success' ? `
-                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            ` : type === 'error' ? `
-                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            ` : `
-                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            `}
-            <span class="font-medium">${message}</span>
-        </div>
-        <button onclick="this.parentElement.remove()" class="ml-4 text-white hover:text-gray-100">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        </button>
-    `;
-
-    container.appendChild(notification);
-
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        notification.classList.add('hide');
-        setTimeout(() => notification.remove(), 300);
-    }, 5000);
-}
+// Using global notification system from shared-functions.js
 
 // Update the showConfirmation function
 function showConfirmation(message, onConfirm, onCancel) {

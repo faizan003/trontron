@@ -496,26 +496,7 @@ function refreshBalance() {
 }
 
 // Notification function
-function showNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    let bgColor = 'bg-green-500';
-    
-    if (type === 'error') bgColor = 'bg-red-500';
-    else if (type === 'info') bgColor = 'bg-blue-500';
-    else if (type === 'warning') bgColor = 'bg-yellow-500';
-    
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg ${bgColor} text-white shadow-lg transition-all transform translate-y-0 opacity-100`;
-
-    notification.innerHTML = message;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateY(-100%)';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
+// Using global notification system from shared-functions.js
 
 async function checkAndConvert() {
     const statusDiv = document.getElementById('conversion-status');
@@ -577,8 +558,9 @@ async function checkAndConvert() {
 
             // Get user's private key securely for transaction signing
             const authData = await getAuthenticationData();
-            if (!authData) {
-                throw new Error('Authentication cancelled');
+                            if (!authData) {
+                showNotification('Authentication cancelled', 'warning');
+                return;
             }
 
             const requestBody = authData;
@@ -970,7 +952,7 @@ async function getAuthenticationData() {
             
             const password = modal.querySelector('#auth-password').value;
             if (!password) {
-                alert('Password is required');
+                showNotification('Password is required', 'error');
                 return;
             }
 
