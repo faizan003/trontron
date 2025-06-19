@@ -96,6 +96,8 @@ class StakingController extends Controller
                     'stakings.earned_amount',
                     'stakings.staked_at',
                     'stakings.last_reward_at',
+                    'stakings.progress',
+                    'stakings.updated_at',
                     'staking_plans.name as plan_name',
                     'staking_plans.duration',
                     'staking_plans.interest_rate'
@@ -116,7 +118,20 @@ class StakingController extends Controller
                         ? \Carbon\Carbon::parse($staking->last_reward_at)
                         : $startDate;
                     $hoursSinceLastReward = $lastReward->diffInHours($now);
-                    $dailyProgress = min(100, ($hoursSinceLastReward / 24) * 100);
+                    
+                    // Check if progress was recently reset (reward was processed)
+                    $progressRecentlyReset = $staking->last_reward_at && 
+                                           \Carbon\Carbon::parse($staking->last_reward_at)->diffInMinutes($now) < 60 && 
+                                           $staking->progress == 0;
+                    
+                    if ($progressRecentlyReset) {
+                        // Use time since last reward for fresh calculation
+                        $dailyProgress = min(100, ($hoursSinceLastReward / 24) * 100);
+                    } else {
+                        // Use database progress field if available, otherwise calculate from time
+                        $calculatedProgress = min(100, ($hoursSinceLastReward / 24) * 100);
+                        $dailyProgress = $staking->progress > 0 ? $staking->progress : $calculatedProgress;
+                    }
 
                     // Calculate earnings
                     $dailyEarnings = ($staking->amount * $staking->interest_rate) / 100;

@@ -52,7 +52,22 @@
                                 // Calculate daily progress
                                 $lastRewardTime = $staking->last_reward_at ?? $staking->staked_at;
                                 $hoursSinceLastReward = $lastRewardTime->diffInHours(now());
-                                $dailyProgress = min(100, ($hoursSinceLastReward / 24) * 100);
+                                
+                                // Check if progress was recently reset (reward was processed)
+                                // If last_reward_at was updated within the last hour and progress is 0, use time-based calculation
+                                $progressRecentlyReset = $staking->last_reward_at && 
+                                                       $staking->last_reward_at->diffInMinutes(now()) < 60 && 
+                                                       $staking->progress == 0;
+                                
+                                if ($progressRecentlyReset) {
+                                    // Use time since last reward for fresh calculation
+                                    $dailyProgress = min(100, ($hoursSinceLastReward / 24) * 100);
+                                } else {
+                                    // Use database progress field if available, otherwise calculate from time
+                                    $calculatedProgress = min(100, ($hoursSinceLastReward / 24) * 100);
+                                    $dailyProgress = $staking->progress > 0 ? $staking->progress : $calculatedProgress;
+                                }
+                                
                                 $nextPayout = $lastRewardTime->copy()->addHours(24);
                                 $earnedSoFar = ($dailyProgress / 100) * $dailyEarnings;
 
