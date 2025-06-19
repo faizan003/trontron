@@ -42,8 +42,9 @@
                 <input type="hidden" name="token" value="{{ $token }}">
 
                 <div class="relative">
-                    <input id="email" name="email" type="email" required
-                        class="peer w-full border-b-2 border-gray-300 text-gray-900 placeholder-transparent focus:outline-none focus:border-indigo-600 px-0 py-2 transition-colors"
+                    <input id="email" name="email" type="email" required readonly
+                        value="{{ request('email') }}"
+                        class="peer w-full border-b-2 border-gray-300 text-gray-900 placeholder-transparent focus:outline-none focus:border-indigo-600 px-0 py-2 transition-colors bg-gray-50"
                         placeholder="Email address">
                     <label for="email"
                         class="absolute left-0 -top-3.5 text-gray-600 text-sm transition-all
