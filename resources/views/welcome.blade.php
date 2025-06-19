@@ -5,7 +5,7 @@
     <!-- Hero Section -->
     <div class="relative bg-gradient-to-b from-blue-900 via-blue-800 to-indigo-900 text-white">
         <div class="absolute inset-0">
-            <div class="absolute inset-0 bg-[url('/public/images/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/20 to-transparent"></div>
         </div>
         <div class="relative max-w-7xl mx-auto px-4 pt-20 pb-24 sm:px-6 lg:px-8">
             <div class="text-center">

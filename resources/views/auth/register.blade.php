@@ -485,10 +485,25 @@ async function initTronWeb() {
 
         // Initialize TronWeb with secure configuration
         try {
-            const response = await fetch('/api/public/config');
-            const configData = await response.json();
+            // Get configuration from secure API endpoint
+            console.log('Fetching API configuration...');
+            const configResponse = await fetch('/api/public/config', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            const configData = await configResponse.json();
+            console.log('API config response:', { success: configData.success, hasKey: !!configData.config?.trongrid_api_key });
+            
             if (!configData.success) {
-                throw new Error('Failed to get API configuration');
+                throw new Error('API configuration not available: ' + (configData.message || 'Unknown error'));
+            }
+            
+            if (!configData.config.trongrid_api_key) {
+                throw new Error('TronGrid API key not configured. Please check your environment variables.');
             }
 
             // Try to get TronWeb constructor from different possible locations

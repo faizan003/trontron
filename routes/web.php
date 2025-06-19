@@ -24,6 +24,16 @@ Route::get('/', function () {
 Route::get('/api/public/config', [App\Http\Controllers\SecureApiController::class, 'getPublicApiConfig'])
     ->name('api.public.config');
 
+// Debug route to test if routes are working
+Route::get('/api/public/test', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'API routes are working',
+        'timestamp' => now(),
+        'env' => app()->environment()
+    ]);
+})->name('api.public.test');
+
 // Authentication Routes
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -46,8 +56,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/staking/stats', [StakingController::class, 'getStakingStats'])->name('staking.stats');
     Route::post('/staking/{staking}/withdraw', [StakingController::class, 'withdraw'])->name('staking.withdraw');
 
-    // TRX Conversion Route
+    // TRX Conversion Routes
     Route::post('/convert-to-staketrx', [StakeTrxController::class, 'convert'])->name('convert.staketrx');
+    Route::get('/convert-status', [StakeTrxController::class, 'getConversionStatus'])->name('convert.status');
     Route::post('/convert-referral-earnings', [StakeTrxController::class, 'convertReferralEarnings'])->name('convert.referral.earnings');
 
     Route::get('/profile', function () {

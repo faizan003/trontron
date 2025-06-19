@@ -7,9 +7,12 @@ use Illuminate\Http\Request;
 use App\Models\TrxTransaction;
 use Illuminate\Support\Facades\DB;
 use App\Models\ReferralEarning;
+use Carbon\Carbon;
 
 class StakeTrxController extends Controller
 {
+    const CONVERT_COOLDOWN_MINUTES = 15;
+
     public function convert(Request $request)
     {
         try {
@@ -18,8 +21,51 @@ class StakeTrxController extends Controller
             $user = auth()->user();
             $amount = $request->amount;
 
-            // Update user's wallet balance
+            // Rate limiting check - prevent conversions within 15 minutes
+            $lastConversion = TrxTransaction::where('user_id', $user->id)
+                ->where('type', 'convert')
+                ->where('status', 'completed')
+                ->where('created_at', '>=', Carbon::now()->subMinutes(self::CONVERT_COOLDOWN_MINUTES))
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($lastConversion) {
+                $timeRemaining = Carbon::now()->diffInMinutes($lastConversion->created_at->addMinutes(self::CONVERT_COOLDOWN_MINUTES));
+                $remainingTime = self::CONVERT_COOLDOWN_MINUTES - Carbon::now()->diffInMinutes($lastConversion->created_at);
+                
+                DB::rollBack();
+                return response()->json([
+                    'success' => false, 
+                    'message' => "Please wait {$remainingTime} minutes before making another conversion.",
+                    'error_type' => 'rate_limit',
+                    'remaining_minutes' => $remainingTime,
+                    'next_available_at' => $lastConversion->created_at->addMinutes(self::CONVERT_COOLDOWN_MINUTES)->toISOString()
+                ], 429);
+            }
+
+            // Validate amount
+            if (!$amount || $amount <= 0) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Invalid amount provided'
+                ], 400);
+            }
+
+            // Get user's wallet
             $wallet = $user->wallet;
+            if (!$wallet) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Wallet not found'
+                ], 400);
+            }
+
+            // Note: We don't check balance here because the transaction has already been sent to blockchain
+            // The frontend has already validated the balance before sending the transaction
+
+            // Update user's wallet balance
             $wallet->balance -= $amount;
             $wallet->tronstake_balance += $amount;
             $wallet->save();
@@ -46,9 +92,46 @@ class StakeTrxController extends Controller
             ]);
 
             DB::commit();
-            return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'next_conversion_available_at' => Carbon::now()->addMinutes(self::CONVERT_COOLDOWN_MINUTES)->toISOString()
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // Add method to check conversion status
+    public function getConversionStatus()
+    {
+        try {
+            $user = auth()->user();
+            
+            $lastConversion = TrxTransaction::where('user_id', $user->id)
+                ->where('type', 'convert')
+                ->where('status', 'completed')
+                ->where('created_at', '>=', Carbon::now()->subMinutes(self::CONVERT_COOLDOWN_MINUTES))
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($lastConversion) {
+                $remainingTime = self::CONVERT_COOLDOWN_MINUTES - Carbon::now()->diffInMinutes($lastConversion->created_at);
+                return response()->json([
+                    'success' => true,
+                    'can_convert' => false,
+                    'remaining_minutes' => max(0, $remainingTime),
+                    'next_available_at' => $lastConversion->created_at->addMinutes(self::CONVERT_COOLDOWN_MINUTES)->toISOString(),
+                    'last_conversion_at' => $lastConversion->created_at->toISOString()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'can_convert' => true,
+                'remaining_minutes' => 0
+            ]);
+        } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }

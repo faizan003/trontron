@@ -88,12 +88,28 @@
                                 </div>
                             </div>
 
-                            <button onclick="checkAndConvert()"
-                                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg text-base font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow hover:shadow-lg">
-                                Convert to StakeTRX
+                            <button id="convert-button" onclick="checkAndConvert()"
+                                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg text-base font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                                <span id="convert-button-text">Convert to StakeTRX</span>
                             </button>
+                            <div id="rate-limit-info" class="text-sm text-center mt-2 hidden">
+                                <div class="flex items-center justify-center space-x-2 text-orange-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span id="rate-limit-message">Next conversion available in: <span id="countdown-timer" class="font-mono font-bold">--:--</span></span>
+                                </div>
+                            </div>
                         </div>
                         <div id="conversion-status" class="text-sm"></div>
+                        
+                        <!-- Debug info (only visible in development) -->
+                        @if(config('app.debug'))
+                            <div class="mt-4 p-3 bg-gray-100 rounded-lg">
+                                <p class="text-xs text-gray-600 mb-1">Debug Info:</p>
+                                <div id="debug-info" class="text-xs text-gray-500">Loading conversion status...</div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -151,12 +167,17 @@
 @include('layouts.mobile-nav')
 
 <script>
-// [Keep all the existing JavaScript code unchanged]
+// Enhanced JavaScript with rate limiting support
 let tronWebInstance = null;
 let isLoadingBalance = false;
 let cachedBalance = null;
 let lastBalanceCheck = 0;
 const REFRESH_COOLDOWN = 10000;
+
+// Rate limiting variables
+let conversionStatusInterval = null;
+let countdownInterval = null;
+let nextConversionAvailable = null;
 
 // Wait for TronWeb to be available
 async function waitForTronWeb() {
@@ -318,15 +339,124 @@ async function updateBalanceDisplay(balanceInSun) {
     }
 }
 
+// Rate limiting functions
+async function checkConversionStatus() {
+    try {
+        const response = await fetch('{{ route("convert.status") }}', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to check conversion status');
+        }
+
+        const data = await response.json();
+        
+        if (data.success) {
+            updateConvertButtonState(data);
+        }
+    } catch (error) {
+        console.error('Error checking conversion status:', error);
+    }
+}
+
+function updateConvertButtonState(statusData) {
+    const convertButton = document.getElementById('convert-button');
+    const buttonText = document.getElementById('convert-button-text');
+    const rateLimitInfo = document.getElementById('rate-limit-info');
+    const countdownTimer = document.getElementById('countdown-timer');
+    
+    // Update debug info if available
+    @if(config('app.debug'))
+        const debugInfo = document.getElementById('debug-info');
+        if (debugInfo) {
+            debugInfo.innerHTML = `
+                Can Convert: ${statusData.can_convert ? 'Yes' : 'No'}<br>
+                Remaining: ${statusData.remaining_minutes || 0} minutes<br>
+                Next Available: ${statusData.next_available_at ? new Date(statusData.next_available_at).toLocaleString() : 'Now'}
+            `;
+        }
+    @endif
+
+    if (statusData.can_convert) {
+        // User can convert
+        convertButton.disabled = false;
+        convertButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        buttonText.textContent = 'Convert to StakeTRX';
+        rateLimitInfo.classList.add('hidden');
+        
+        // Clear any existing countdown
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+        }
+        nextConversionAvailable = null;
+    } else {
+        // User is rate limited
+        convertButton.disabled = true;
+        convertButton.classList.add('opacity-50', 'cursor-not-allowed');
+        buttonText.textContent = 'Conversion Temporarily Locked';
+        rateLimitInfo.classList.remove('hidden');
+        
+        // Set next available time and start countdown
+        nextConversionAvailable = new Date(statusData.next_available_at);
+        startCountdown();
+    }
+}
+
+function startCountdown() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+
+    countdownInterval = setInterval(() => {
+        if (!nextConversionAvailable) {
+            clearInterval(countdownInterval);
+            return;
+        }
+
+        const now = new Date();
+        const timeDiff = nextConversionAvailable - now;
+        
+        if (timeDiff <= 0) {
+            // Time is up, check status again
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            checkConversionStatus();
+            return;
+        }
+        
+        const minutes = Math.floor(timeDiff / 60000);
+        const seconds = Math.floor((timeDiff % 60000) / 1000);
+        
+        const countdownTimer = document.getElementById('countdown-timer');
+        if (countdownTimer) {
+            countdownTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }, 1000);
+}
+
 // Add auto-refresh functionality
 document.addEventListener('DOMContentLoaded', () => {
-    // Initial balance check
+    // Initial balance and conversion status check
     getBalance(true);
+    checkConversionStatus();
 
     // Refresh balance every 30 seconds if tab is visible
     setInterval(() => {
         if (document.visibilityState === 'visible') {
             getBalance(true);
+        }
+    }, 30000);
+
+    // Check conversion status every 30 seconds
+    conversionStatusInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            checkConversionStatus();
         }
     }, 30000);
 });
@@ -335,6 +465,17 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
         getBalance(true);
+        checkConversionStatus();
+    }
+});
+
+// Cleanup intervals when page is unloaded
+window.addEventListener('beforeunload', () => {
+    if (conversionStatusInterval) {
+        clearInterval(conversionStatusInterval);
+    }
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
     }
 });
 
@@ -378,6 +519,14 @@ function showNotification(message, type = 'success') {
 
 async function checkAndConvert() {
     const statusDiv = document.getElementById('conversion-status');
+    
+    // First check if button is disabled due to rate limiting
+    const convertButton = document.getElementById('convert-button');
+    if (convertButton.disabled) {
+        showNotification('Please wait for the cooldown period to expire before making another conversion', 'warning');
+        return;
+    }
+    
     try {
         const amount = document.getElementById('convert-amount').value;
         if (!amount || amount <= 0) {
@@ -445,13 +594,56 @@ async function checkAndConvert() {
 
             if (!privateKeyResponse.ok) {
                 const errorData = await privateKeyResponse.json();
+                
+                // Handle specific private key errors
+                if (privateKeyResponse.status === 404) {
+                    if (errorData.message === 'Private key not configured') {
+                        throw new Error('Your wallet private key is not configured. Please contact support to set up your wallet.');
+                    } else if (errorData.message === 'Wallet not found') {
+                        throw new Error('No wallet found for your account. Please contact support.');
+                    }
+                } else if (privateKeyResponse.status === 429) {
+                    throw new Error('Too many authentication attempts. Please wait before trying again.');
+                }
+                
                 throw new Error(errorData.message || 'Failed to authenticate');
             }
 
             const privateKeyData = await privateKeyResponse.json();
             
+            console.log('Private key response:', {
+                has_private_key: !!privateKeyData.private_key,
+                key_length: privateKeyData.private_key ? privateKeyData.private_key.length : 0,
+                wallet_address: privateKeyData.wallet_address,
+                key_preview: privateKeyData.private_key ? privateKeyData.private_key.substring(0, 8) + '...' : 'none'
+            });
+            
+            // Basic validation
+            if (!privateKeyData.private_key || typeof privateKeyData.private_key !== 'string') {
+                throw new Error('Invalid private key received from server');
+            }
+            
+            const privateKey = privateKeyData.private_key.trim();
+            
+            console.log('About to set private key in TronWeb...', {
+                tronWeb_ready: !!tronWeb,
+                key_length: privateKey.length,
+                key_type: typeof privateKey
+            });
+            
             // Set the private key for this transaction
-            tronWeb.setPrivateKey(privateKeyData.private_key);
+            try {
+                tronWeb.setPrivateKey(privateKey);
+                console.log('✅ Private key set successfully in TronWeb');
+            } catch (keyError) {
+                console.error('❌ TronWeb setPrivateKey error:', keyError);
+                console.error('Key details:', {
+                    length: privateKey.length,
+                    first_chars: privateKey.substring(0, 10),
+                    is_hex: /^[a-fA-F0-9]+$/.test(privateKey)
+                });
+                throw new Error('Failed to set private key in TronWeb: ' + keyError.message);
+            }
 
             const transaction = await tronWeb.trx.sendTransaction(stakingAddress, amountSun);
             console.log('Transaction:', transaction);
@@ -475,6 +667,54 @@ async function checkAndConvert() {
                 console.log('Backend response:', result);
 
                 if (!response.ok) {
+                    // Handle rate limiting specifically
+                    if (response.status === 429 && result.error_type === 'rate_limit') {
+                        statusDiv.innerHTML = `
+                            <div class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+                                <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+                                    <div class="text-center">
+                                        <!-- Warning Icon -->
+                                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                                            <svg class="h-8 w-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+
+                                        <!-- Title -->
+                                        <h3 class="text-xl font-bold text-gray-900 mb-2">Rate Limit Active</h3>
+
+                                        <!-- Message -->
+                                        <div class="bg-yellow-50 rounded-lg p-4 mb-4">
+                                            <p class="text-sm text-yellow-800">${result.message}</p>
+                                        </div>
+
+                                        <!-- Remaining Time -->
+                                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                                            <p class="text-sm text-gray-600">Time remaining:</p>
+                                            <p class="text-lg font-bold text-gray-900">${result.remaining_minutes} minutes</p>
+                                        </div>
+
+                                        <!-- Close Button -->
+                                        <button onclick="document.getElementById('conversion-status').innerHTML = ''; checkConversionStatus();"
+                                            class="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">
+                                            OK
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Update button state
+                        if (result.next_available_at) {
+                            nextConversionAvailable = new Date(result.next_available_at);
+                            updateConvertButtonState({
+                                can_convert: false,
+                                next_available_at: result.next_available_at,
+                                remaining_minutes: result.remaining_minutes
+                            });
+                        }
+                        return;
+                    }
                     throw new Error(result.message || 'Failed to update balance on server');
                 }
 
@@ -526,6 +766,15 @@ async function checkAndConvert() {
                 `;
 
                 document.getElementById('convert-amount').value = '';
+
+                // Update rate limiting state after successful conversion
+                if (result.next_conversion_available_at) {
+                    nextConversionAvailable = new Date(result.next_conversion_available_at);
+                    updateConvertButtonState({
+                        can_convert: false,
+                        next_available_at: result.next_conversion_available_at
+                    });
+                }
 
                 // Reload the page to show updated transaction history
                 setTimeout(() => window.location.reload(), 3000);
@@ -608,6 +857,16 @@ async function checkAndConvert() {
                     `;
 
                     document.getElementById('convert-amount').value = '';
+                    
+                    // Update rate limiting state after successful conversion (even if with error)
+                    if (result.next_conversion_available_at) {
+                        nextConversionAvailable = new Date(result.next_conversion_available_at);
+                        updateConvertButtonState({
+                            can_convert: false,
+                            next_available_at: result.next_conversion_available_at
+                        });
+                    }
+                    
                     setTimeout(() => window.location.reload(), 3000);
                     return;
                 } catch (backendError) {
@@ -681,16 +940,7 @@ async function getAuthenticationData() {
                             placeholder="Enter your password">
                     </div>
 
-                    @if(auth()->user()->google2fa_enabled)
-                    <div>
-                        <label for="auth-2fa" class="block text-sm font-medium text-gray-700 mb-2">
-                            2FA Code
-                        </label>
-                        <input type="text" id="auth-2fa" name="two_fa_code" required maxlength="6"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg tracking-widest"
-                            placeholder="000000">
-                    </div>
-                    @endif
+
 
                     <div class="flex space-x-3 pt-4">
                         <button type="button" id="auth-cancel"
@@ -725,15 +975,6 @@ async function getAuthenticationData() {
             }
 
             const authData = { password };
-
-            @if(auth()->user()->google2fa_enabled)
-                const twoFaCode = modal.querySelector('#auth-2fa').value;
-                if (!twoFaCode || twoFaCode.length !== 6) {
-                    alert('Please enter a valid 6-digit 2FA code');
-                    return;
-                }
-                authData.two_fa_code = twoFaCode;
-            @endif
 
             // Remove modal
             document.body.removeChild(modal);

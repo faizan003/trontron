@@ -4,6 +4,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\StakeTrxController;
 
+// Public API Configuration (no auth required)
+Route::get('/public/config', [App\Http\Controllers\SecureApiController::class, 'getPublicApiConfig'])
+    ->name('api.public.config.alt');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/convert-to-staketrx', [StakeTrxController::class, 'convert']);
 });

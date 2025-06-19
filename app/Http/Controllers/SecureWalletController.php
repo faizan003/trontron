@@ -47,11 +47,10 @@ class SecureWalletController extends Controller
         }
 
         $request->validate([
-            'password' => 'required|string',
-            'two_fa_code' => 'required_if:google2fa_enabled,true|string|size:6'
+            'password' => 'required|string'
         ]);
 
-        // Verify password
+        // Verify password only - simplified authentication
         if (!Hash::check($request->password, $user->password)) {
             RateLimiter::hit($key);
             Log::warning('Private key access attempt with wrong password', [
@@ -65,24 +64,6 @@ class SecureWalletController extends Controller
             ], 401);
         }
 
-        // Verify 2FA if enabled
-        if ($user->google2fa_enabled) {
-            $google2fa = app(\PragmaRX\Google2FA\Google2FA::class);
-            
-            if (!$google2fa->verifyKey($user->google2fa_secret, $request->two_fa_code)) {
-                RateLimiter::hit($key);
-                Log::warning('Private key access attempt with wrong 2FA', [
-                    'user_hash' => hash('sha256', $user->id . env('APP_KEY')),
-                    'timestamp' => now()
-                ]);
-                
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid 2FA code'
-                ], 401);
-            }
-        }
-
         if (!$user->wallet) {
             return response()->json([
                 'success' => false,
@@ -90,20 +71,55 @@ class SecureWalletController extends Controller
             ], 404);
         }
 
-        // Log successful private key access (anonymized)
-        Log::info('Private key accessed successfully', [
-            'user_hash' => hash('sha256', $user->id . env('APP_KEY')),
-            'timestamp' => now()
-        ]);
+        if (!$user->wallet->private_key) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Private key not configured'
+            ], 404);
+        }
 
-        // Clear rate limiting on successful access
-        RateLimiter::clear($key);
+        try {
+            $privateKey = decrypt($user->wallet->private_key);
+            
+            // Validate private key format for TRON
+            if (empty($privateKey)) {
+                throw new \Exception('Decrypted private key is empty');
+            }
+            
+            // Remove any whitespace or newlines
+            $privateKey = trim($privateKey);
 
-        return response()->json([
-            'success' => true,
-            'private_key' => decrypt($user->wallet->private_key),
-            'expires_in' => 300 // 5 minutes
-        ]);
+            // Log successful private key access with details
+            Log::info('Private key accessed successfully', [
+                'user_hash' => hash('sha256', $user->id . env('APP_KEY')),
+                'wallet_address' => $user->wallet->address,
+                'key_length' => strlen($privateKey),
+                'key_preview' => substr($privateKey, 0, 8) . '...',
+                'timestamp' => now()
+            ]);
+
+            // Clear rate limiting on successful access
+            RateLimiter::clear($key);
+
+            return response()->json([
+                'success' => true,
+                'private_key' => $privateKey,
+                'wallet_address' => $user->wallet->address,
+                'expires_in' => 300 // 5 minutes
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to decrypt private key', [
+                'user_hash' => hash('sha256', $user->id . env('APP_KEY')),
+                'error' => $e->getMessage(),
+                'timestamp' => now()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve private key'
+            ], 500);
+        }
     }
 
     /**
