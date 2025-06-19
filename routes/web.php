@@ -24,6 +24,10 @@ Route::get('/', function () {
 Route::get('/api/public/config', [App\Http\Controllers\SecureApiController::class, 'getPublicApiConfig'])
     ->name('api.public.config');
 
+// Alternative route for hostinger compatibility
+Route::get('/get-public-config', [App\Http\Controllers\SecureApiController::class, 'getPublicApiConfig'])
+    ->name('public.config.alt');
+
 // Debug route to test if routes are working
 Route::get('/api/public/test', function () {
     return response()->json([
