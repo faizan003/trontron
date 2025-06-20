@@ -20,8 +20,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Note: Public API Configuration routes removed due to Hostinger restrictions
-// Registration now uses embedded configuration for better compatibility
+// Public API Configuration (using encrypted database storage)
+Route::get('/api/public/config', [App\Http\Controllers\SecureApiController::class, 'getPublicApiConfig'])
+    ->name('api.public.config');
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {

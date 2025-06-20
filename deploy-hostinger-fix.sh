@@ -12,6 +12,23 @@ php artisan cache:clear
 php artisan route:clear
 php artisan view:clear
 
+# Run migrations to ensure api_configs table exists
+echo "📊 Running database migrations..."
+php artisan migrate --force
+
+# Setup encrypted API configuration
+echo "🔐 Setting up encrypted API configuration..."
+if [ -f .env ]; then
+    if grep -q "TRONGRID_API_KEY=" .env; then
+        php artisan api:setup --key="$(grep TRONGRID_API_KEY= .env | cut -d '=' -f2)"
+    else
+        echo "❌ TRONGRID_API_KEY not found in .env file"
+        echo "Please add TRONGRID_API_KEY=your_api_key_here to your .env file and run: php artisan api:setup"
+    fi
+else
+    echo "❌ .env file not found"
+fi
+
 # Optimize for production
 echo "⚡ Optimizing for production..."
 php artisan config:cache

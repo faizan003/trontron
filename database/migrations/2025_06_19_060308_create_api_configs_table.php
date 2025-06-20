@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('api_configs', function (Blueprint $table) {
             $table->id();
+            $table->string('key_name')->unique(); // e.g., 'trongrid_api_key'
+            $table->text('encrypted_value'); // Encrypted API key
+            $table->string('network')->default('testnet'); // testnet or mainnet
+            $table->string('api_url')->default('https://nile.trongrid.io');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

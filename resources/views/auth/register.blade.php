@@ -483,40 +483,40 @@ async function initTronWeb() {
             'window.TronWeb.TronWeb': typeof window.TronWeb?.TronWeb
         });
 
-        // Initialize TronWeb with embedded configuration (Hostinger compatible)
+        // Initialize TronWeb with encrypted database configuration
         try {
-            console.log('Initializing TronWeb with embedded configuration...');
+            console.log('Fetching API configuration from encrypted database...');
             
-            // Embedded configuration for Hostinger compatibility
-            // This bypasses the need for API config routes that Hostinger blocks
-            const embeddedApiKey = '{{ env("TRONGRID_API_KEY") }}';
-            const configData = {
-                success: true,
-                config: {
-                    trongrid_api_key: embeddedApiKey,
-                    network: 'testnet',
-                    api_url: 'https://nile.trongrid.io'
+            // Get configuration from secure database storage
+            const configResponse = await fetch('/api/public/config', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
-            };
-            
-            // Additional validation for embedded config
-            if (!embeddedApiKey || embeddedApiKey.length < 10) {
-                console.error('Invalid embedded API key:', { 
-                    hasKey: !!embeddedApiKey, 
-                    keyLength: embeddedApiKey ? embeddedApiKey.length : 0 
-                });
-                throw new Error('Server configuration error: TronGrid API key not properly configured. Please contact support.');
-            }
-            
-            console.log('Using embedded config:', { 
-                success: configData.success, 
-                hasKey: !!configData.config?.trongrid_api_key,
-                network: configData.config.network 
             });
             
+            if (!configResponse.ok) {
+                throw new Error(`Failed to fetch API configuration: ${configResponse.status}`);
+            }
+            
+            const configData = await configResponse.json();
+            
+            console.log('API config retrieved:', { 
+                success: configData.success, 
+                hasKey: !!configData.config?.trongrid_api_key,
+                network: configData.config?.network 
+            });
+            
+            if (!configData.success) {
+                const errorMsg = configData.message || 'Unknown error';
+                console.error('API configuration error:', configData);
+                throw new Error('Server configuration error: ' + errorMsg);
+            }
+            
             if (!configData.config || !configData.config.trongrid_api_key) {
-                console.error('Missing TronGrid API key in embedded config:', configData);
-                throw new Error('Server configuration incomplete. Please contact support if this issue persists.');
+                console.error('Missing TronGrid API key in config:', configData);
+                throw new Error('Server configuration incomplete. Please run: php artisan api:setup');
             }
 
             // Try to get TronWeb constructor from different possible locations

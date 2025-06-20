@@ -10,6 +10,25 @@ php artisan cache:clear
 php artisan route:clear
 php artisan view:clear
 
+# Run migrations to ensure api_configs table exists
+Write-Host "📊 Running database migrations..." -ForegroundColor Yellow
+php artisan migrate --force
+
+# Setup encrypted API configuration
+Write-Host "🔐 Setting up encrypted API configuration..." -ForegroundColor Yellow
+if (Test-Path ".env") {
+    $envContent = Get-Content ".env" -Raw
+    if ($envContent -match "TRONGRID_API_KEY=(.+)") {
+        $apiKey = $matches[1].Trim()
+        php artisan api:setup --key="$apiKey"
+    } else {
+        Write-Host "❌ TRONGRID_API_KEY not found in .env file" -ForegroundColor Red
+        Write-Host "Please add TRONGRID_API_KEY=your_api_key_here to your .env file and run: php artisan api:setup" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "❌ .env file not found" -ForegroundColor Red
+}
+
 # Optimize for production
 Write-Host "⚡ Optimizing for production..." -ForegroundColor Yellow
 php artisan config:cache

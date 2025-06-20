@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use App\Models\ApiConfig;
 
 class SecureApiController extends Controller
 {
@@ -32,13 +33,19 @@ class SecureApiController extends Controller
             ], 401);
         }
 
+        // Get configuration from encrypted database storage
+        $config = ApiConfig::getTronGridConfig();
+        
+        if (!$config) {
+            return response()->json([
+                'success' => false,
+                'message' => 'API configuration not found. Please contact administrator.'
+            ], 500);
+        }
+
         return response()->json([
             'success' => true,
-            'config' => [
-                'trongrid_api_key' => env('TRONGRID_API_KEY'),
-                'network' => 'testnet',
-                'api_url' => 'https://nile.trongrid.io'
-            ]
+            'config' => $config
         ]);
     }
 
@@ -59,16 +66,16 @@ class SecureApiController extends Controller
 
         RateLimiter::hit($key);
 
-        $trongridApiKey = env('TRONGRID_API_KEY');
+        // Get configuration from encrypted database storage
+        $config = ApiConfig::getTronGridConfig();
         
-        // Check if API key is configured
-        if (!$trongridApiKey) {
+        if (!$config || !$config['trongrid_api_key']) {
             return response()->json([
                 'success' => false,
-                'message' => 'TronGrid API key not configured on server',
+                'message' => 'TronGrid API key not configured on server. Please run: php artisan api:setup',
                 'debug' => [
                     'env' => app()->environment(),
-                    'config_cached' => app()->configurationIsCached(),
+                    'config_in_db' => ApiConfig::where('key_name', 'trongrid_api_key')->exists(),
                 ]
             ], 500);
         }
@@ -76,11 +83,7 @@ class SecureApiController extends Controller
         return response()->json([
             'success' => true,
             'hasKey' => true,
-            'config' => [
-                'trongrid_api_key' => $trongridApiKey,
-                'network' => 'testnet',
-                'api_url' => 'https://nile.trongrid.io'
-            ]
+            'config' => $config
         ]);
     }
 } 

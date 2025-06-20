@@ -6,7 +6,7 @@
 Hostinger hosting environment blocks access to certain API configuration routes, causing the registration system to fail with 404/500 errors when trying to fetch TronGrid API configuration.
 
 ### Solution Implemented
-**Embedded Configuration Approach** - Bypassed the API configuration routes entirely by embedding the TronGrid API key directly in the registration page template.
+**Encrypted Database Storage Approach** - Store the TronGrid API key encrypted in the database and retrieve it via a secure API endpoint. This is more secure than environment variables and works reliably on Hostinger.
 
 ### Changes Made
 
