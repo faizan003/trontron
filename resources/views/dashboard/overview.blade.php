@@ -31,7 +31,7 @@
                         </a>
                     </div>
 
-                    <div class="space-y-4">
+                    <div class="space-y-4" id="active-stakings-container">
                         @php
                             $activeStakings = auth()->user()->stakings()
                                 ->with('plan')
@@ -49,27 +49,14 @@
                                 $daysRemaining = number_format(max(0, $duration - $daysElapsed), 2);
                                 $endDate = $staking->staked_at->copy()->addDays($duration);
 
-                                // Calculate daily progress - use the database progress field updated by cron job
-                                $lastRewardTime = $staking->last_reward_at ?? $staking->staked_at;
-                                $hoursSinceLastReward = $lastRewardTime->diffInHours(now());
-                                
-                                // Always use the database progress field that's updated by the cron job
-                                // This ensures consistency between backend cron updates and frontend display
+                                // For active stakings, use database progress field
                                 $dailyProgress = (float) $staking->progress;
-                                
+                                $lastRewardTime = $staking->last_reward_at ?? $staking->staked_at;
                                 $nextPayout = $lastRewardTime->copy()->addHours(24);
                                 $earnedSoFar = ($dailyProgress / 100) * $dailyEarnings;
-
-                                // Debug information
-                                $debug = [
-                                    'Last Reward' => $lastRewardTime->format('Y-m-d H:i:s'),
-                                    'Hours Since' => $hoursSinceLastReward,
-                                    'Progress' => number_format($dailyProgress, 2) . '%',
-                                    'Next Payout' => $nextPayout->format('Y-m-d H:i:s'),
-                                ];
                             @endphp
 
-                            <div class="bg-gradient-to-r {{ $isCompleted ? 'from-gray-50 to-gray-100' : 'from-blue-50 to-purple-50' }} rounded-xl overflow-hidden">
+                            <div class="bg-gradient-to-r {{ $isCompleted ? 'from-gray-50 to-gray-100' : 'from-blue-50 to-purple-50' }} rounded-xl overflow-hidden" data-staking-id="{{ $staking->id }}">
                                 <div class="p-4">
                                     <div class="flex justify-between items-start mb-3">
                                         <div>
@@ -102,12 +89,9 @@
                                         </div>
                                         <div class="bg-white/50 rounded-lg p-2">
                                             <span class="text-sm text-gray-600">{{ $isCompleted ? 'Total Earned' : 'Earned So Far' }}</span>
-                                            <p class="text-lg font-semibold {{ $isCompleted ? 'text-gray-900' : 'text-green-600' }}">
+                                            <p class="text-lg font-semibold {{ $isCompleted ? 'text-gray-900' : 'text-green-600' }}" data-earned-amount="{{ $staking->id }}">
                                                 +{{ number_format($staking->earned_amount, 6) }} TRX
                                             </p>
-                                            @if(!$isCompleted)
-                                                {{-- <span class="text-xs text-gray-500">Updated every 24 hours</span> --}}
-                                            @endif
                                         </div>
                                     </div>
 
@@ -145,92 +129,74 @@
                                     <div class="bg-white/30 rounded-lg p-3 space-y-2">
                                         <div class="flex justify-between items-center mb-1">
                                             <span class="text-sm font-medium text-gray-700">Today's Progress</span>
-                                            <span class="text-sm text-green-600">+{{ number_format($earnedSoFar, 6) }} / {{ number_format($dailyEarnings, 6) }} TRX</span>
+                                            <span class="text-sm text-green-600" data-today-earnings="{{ $staking->id }}">+{{ number_format($earnedSoFar, 6) }} / {{ number_format($dailyEarnings, 6) }} TRX</span>
                                         </div>
                                         <div class="w-full bg-gray-200 rounded-full h-2">
                                             <div class="bg-green-500 h-2 rounded-full transition-all duration-500"
-                                                 style="width: {{ $dailyProgress }}%"
-                                                 data-staking-id="{{ $staking->id }}"
-                                                 data-daily-earnings="{{ $dailyEarnings }}"></div>
+                                                 data-progress-bar="{{ $staking->id }}"
+                                                 style="width: {{ $dailyProgress }}%"></div>
                                         </div>
                                         <div class="flex justify-between text-xs">
-                                            <span class="text-gray-500">Last Reward: {{ $lastRewardTime->format('M d, Y H:i') }}</span>
-                                            <span class="text-gray-500">Next Reward: {{ $nextPayout->format('M d, Y H:i') }}</span>
+                                            <span class="text-gray-500" data-last-reward="{{ $staking->id }}">Last Reward: {{ $lastRewardTime->format('M d, Y H:i') }}</span>
+                                            <span class="text-gray-500" data-next-reward="{{ $staking->id }}">Next Reward: {{ $nextPayout->format('M d, Y H:i') }}</span>
                                         </div>
 
-                                        <!-- Info Icon and Debug Information -->
+                                        <!-- Debug Information -->
                                         <div class="relative">
                                             <button onclick="toggleDebugInfo({{ $staking->id }})" class="mt-2 text-gray-400 hover:text-gray-600">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                 </svg>
                                             </button>
-                                            <!-- Debug Information (Hidden by default) -->
-                                            <div id="debug-info-{{ $staking->id }}" class="hidden mt-2 p-2 bg-gray-100 rounded text-xs">
+                                            <div id="debug-info-{{ $staking->id }}" class="hidden mt-2 p-2 bg-gray-100 rounded text-xs" data-debug-info="{{ $staking->id }}">
                                                 <div class="font-medium text-gray-700">Staking Details:</div>
-                                                @foreach($debug as $key => $value)
-                                                    <div class="flex justify-between">
-                                                        <span class="text-gray-600">{{ $key }}:</span>
-                                                        <span class="text-gray-800">{{ $value }}</span>
-                                                    </div>
-                                                @endforeach
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Last Reward:</span>
+                                                    <span class="text-gray-800" data-debug-last="{{ $staking->id }}">{{ $lastRewardTime->format('Y-m-d H:i:s') }}</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Hours Since:</span>
+                                                    <span class="text-gray-800" data-debug-hours="{{ $staking->id }}">0</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Progress:</span>
+                                                    <span class="text-gray-800" data-debug-progress="{{ $staking->id }}">{{ number_format($dailyProgress, 2) }}%</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">Next Payout:</span>
+                                                    <span class="text-gray-800" data-debug-next="{{ $staking->id }}">{{ $nextPayout->format('Y-m-d H:i:s') }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     @else
-                                    <!-- Compact Completion Summary -->
+                                    <!-- Completed Staking Summary -->
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-sm text-gray-600">
                                             <div class="flex justify-between mb-2">
                                                 <span>Total Profit</span>
                                                 <span class="font-medium text-green-600">+{{ number_format($staking->earned_amount, 6) }} TRX</span>
                                             </div>
-
-                                            <!-- Show More Button -->
-                                            <button onclick="toggleDetails('{{ $staking->id }}')" class="text-blue-600 hover:text-blue-700 text-sm mt-2">
-                                                <span id="show-more-text-{{ $staking->id }}">Show Details</span>
-                                                <svg id="show-more-icon-{{ $staking->id }}" class="w-4 h-4 inline-block ml-1 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                </svg>
-                                            </button>
-
-                                            <!-- Detailed Summary (Hidden by default) -->
-                                            <div id="staking-details-{{ $staking->id }}" class="hidden mt-3 space-y-2 border-t border-gray-200 pt-3">
-                                                <div class="flex justify-between">
-                                                    <span>Initial Investment</span>
-                                                    <span class="font-medium">{{ number_format($staking->amount, 6) }} TRX</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span>Total Profit</span>
-                                                    <span class="font-medium text-green-600">+{{ number_format($staking->earned_amount, 6) }} TRX</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span>Investment Returned</span>
-                                                    <span class="font-medium">+{{ number_format($staking->amount, 6) }} TRX</span>
-                                                </div>
-                                                <div class="flex justify-between pt-2 border-t border-gray-200">
-                                                    <span>Total Return</span>
-                                                    <span class="font-medium text-gray-900">{{ number_format($staking->earned_amount, 6) }} TRX</span>
-                                                </div>
-                                                <div class="text-xs text-gray-500 mt-2">
-                                                    <div>Started: {{ $staking->staked_at->format('M d, Y') }}</div>
-                                                    <div>Completed: {{ $endDate->format('M d, Y') }}</div>
-                                                    <div>Duration: {{ $duration }} days</div>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                     @endif
                                 </div>
                             </div>
+
                         @empty
-                            <div class="bg-blue-50 rounded-lg p-4 text-center">
-                                <svg class="w-12 h-12 text-blue-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <p class="text-sm text-gray-600">No active stakings yet.</p>
-                                <a href="{{ route('dashboard.plans') }}" class="mt-2 inline-block text-sm text-blue-600 hover:text-blue-700">
-                                    View available staking plans →
+                            <div class="text-center py-12 bg-gray-50 rounded-xl">
+                                <div class="text-gray-400 mb-4">
+                                    <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-gray-600 text-lg mb-2">No Active Stakings</p>
+                                <p class="text-gray-500 mb-6">Start your first staking plan to begin earning daily rewards</p>
+                                <a href="{{ route('dashboard.plans') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    <span>View Staking Plans</span>
+                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
                                 </a>
                             </div>
                         @endforelse
@@ -2383,7 +2349,95 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }, 5000);
+    
+    // Start real-time progress updates
+    startRealTimeUpdates();
 });
+
+// Real-time progress update system
+function startRealTimeUpdates() {
+    // Update immediately, then every second
+    updateProgressData();
+    setInterval(updateProgressData, 1000);
+}
+
+function updateProgressData() {
+    fetch('/staking/progress')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                data.data.forEach(staking => {
+                    updateStakingUI(staking);
+                });
+            }
+        })
+        .catch(error => {
+            console.log('Progress update error:', error);
+        });
+}
+
+function updateStakingUI(staking) {
+    const stakingId = staking.id;
+    
+    // Update earned amount
+    const earnedAmountEl = document.querySelector(`[data-earned-amount="${stakingId}"]`);
+    if (earnedAmountEl) {
+        earnedAmountEl.textContent = `+${staking.earned_amount} TRX`;
+    }
+    
+    // Update today's earnings
+    const todayEarningsEl = document.querySelector(`[data-today-earnings="${stakingId}"]`);
+    if (todayEarningsEl) {
+        todayEarningsEl.textContent = `+${staking.earned_today} / ${staking.daily_earnings} TRX`;
+    }
+    
+    // Update progress bar
+    const progressBarEl = document.querySelector(`[data-progress-bar="${stakingId}"]`);
+    if (progressBarEl) {
+        progressBarEl.style.width = `${staking.daily_progress}%`;
+    }
+    
+    // Update last reward time
+    const lastRewardEl = document.querySelector(`[data-last-reward="${stakingId}"]`);
+    if (lastRewardEl) {
+        lastRewardEl.textContent = `Last Reward: ${staking.last_reward}`;
+    }
+    
+    // Update next reward time
+    const nextRewardEl = document.querySelector(`[data-next-reward="${stakingId}"]`);
+    if (nextRewardEl) {
+        nextRewardEl.textContent = `Next Reward: ${staking.next_payout}`;
+    }
+    
+    // Update debug information
+    const debugLastEl = document.querySelector(`[data-debug-last="${stakingId}"]`);
+    if (debugLastEl) {
+        debugLastEl.textContent = staking.last_reward;
+    }
+    
+    const debugHoursEl = document.querySelector(`[data-debug-hours="${stakingId}"]`);
+    if (debugHoursEl) {
+        debugHoursEl.textContent = staking.hours_since_reward;
+    }
+    
+    const debugProgressEl = document.querySelector(`[data-debug-progress="${stakingId}"]`);
+    if (debugProgressEl) {
+        debugProgressEl.textContent = `${staking.daily_progress}%`;
+    }
+    
+    const debugNextEl = document.querySelector(`[data-debug-next="${stakingId}"]`);
+    if (debugNextEl) {
+        debugNextEl.textContent = staking.next_payout;
+    }
+}
+
+// Toggle debug info function
+function toggleDebugInfo(stakingId) {
+    const debugEl = document.getElementById(`debug-info-${stakingId}`);
+    if (debugEl) {
+        debugEl.classList.toggle('hidden');
+    }
+}
 </script>
 
 @endsection

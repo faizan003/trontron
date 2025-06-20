@@ -12,7 +12,7 @@ use Symfony\Component\Console\Input\InputOption;
 class ProcessDailyInterest extends Command
 {
     protected $signature = 'staking:process-daily-interest {--force : Force the operation to run}';
-    protected $description = 'Process daily interest for active stakings based on individual activation times';
+    protected $description = 'Process daily interest for active stakings and update progress in real-time';
 
     public function handle()
     {
@@ -31,26 +31,38 @@ class ProcessDailyInterest extends Command
         file_put_contents(storage_path('logs/cron-debug.log'), $logMessage, FILE_APPEND);
 
         try {
-            DB::beginTransaction();
-
-            // Get all active stakings and check reward eligibility in PHP
+            // Get all active stakings and update their progress in real-time
             $activeStakings = Staking::where('status', '=', 'active')->get();
 
             $this->info("Found " . $activeStakings->count() . " active stakings");
             
             $processedCount = 0;
-            $skippedCount = 0;
+            $updatedCount = 0;
 
             foreach ($activeStakings as $staking) {
                 try {
                     $lastRewardTime = $staking->last_reward_at ?? $staking->staked_at;
                     $hoursSinceLastReward = $lastRewardTime->diffInHours(now());
 
+                    // Calculate daily progress (resets every 24 hours)
+                    $dailyProgress = (fmod($hoursSinceLastReward, 24) / 24) * 100;
+                    $dailyProgress = min(100, max(0, $dailyProgress));
+
+                    // Always update progress for real-time display
+                    DB::table('stakings')
+                        ->where('id', $staking->id)
+                        ->update([
+                            'progress' => $dailyProgress,
+                            'updated_at' => now()
+                        ]);
+
+                    $updatedCount++;
+
                     $this->info("Staking ID {$staking->id}:");
                     $this->info("- Hours since last reward: {$hoursSinceLastReward}");
-                    $this->info("- Last reward time: {$lastRewardTime}");
-                    $this->info("- Current time: " . now());
+                    $this->info("- Daily progress: " . number_format($dailyProgress, 2) . "%");
 
+                    // Process reward if 24+ hours have passed
                     if ($hoursSinceLastReward >= 24) {
                         $processedCount++;
                         $dailyEarnings = ($staking->amount * $staking->plan->interest_rate) / 100;
@@ -62,17 +74,14 @@ class ProcessDailyInterest extends Command
                         $this->info("- Processing reward: +{$dailyEarnings} TRX");
                         $this->info("- Days elapsed: {$daysElapsed} / {$staking->plan->duration}");
 
-                        // Before update
-                        $this->info("- Before update:");
-                        $this->info("  * Earned amount: {$staking->earned_amount}");
-                        $this->info("  * User total earnings: {$staking->user->total_earnings}");
-
                         DB::beginTransaction();
                         try {
-                            // Update staking
+                            // Update staking with reward and reset progress
                             $updateData = [
                                 'earned_amount' => DB::raw("earned_amount + {$dailyEarnings}"),
-                                'last_reward_at' => now()
+                                'last_reward_at' => now(),
+                                'progress' => 0, // Reset progress after reward
+                                'updated_at' => now()
                             ];
 
                             // If staking is completed, update status
@@ -95,30 +104,21 @@ class ProcessDailyInterest extends Command
 
                             DB::commit();
 
-                            // After update
-                            $this->info("- After update:");
-                            $this->info("  * New earned amount: " . ($staking->earned_amount + $dailyEarnings));
-                            $this->info("  * New user total earnings: " . ($staking->user->total_earnings + $dailyEarnings));
-                            $this->info("  * Last reward time updated, progress will be recalculated");
+                            $this->info("- Reward processed successfully");
                         } catch (\Exception $e) {
                             DB::rollBack();
                             throw $e;
                         }
-                    } else {
-                        $skippedCount++;
-                        $this->info("- Skipping: Not enough time elapsed ({$hoursSinceLastReward} hours < 24 hours)");
                     }
                 } catch (\Exception $e) {
                     $this->error("Error processing staking {$staking->id}: " . $e->getMessage());
                 }
             }
 
-            DB::commit();
             $this->info("Process completed successfully");
-            $this->info("Summary: {$processedCount} rewards processed, {$skippedCount} stakings skipped");
+            $this->info("Summary: {$processedCount} rewards processed, {$updatedCount} progress updates");
 
         } catch (\Exception $e) {
-            DB::rollBack();
             $this->error("Process failed: " . $e->getMessage());
         }
     }

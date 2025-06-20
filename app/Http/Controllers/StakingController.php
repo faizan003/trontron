@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
 
 class StakingController extends Controller
 {
@@ -204,5 +205,67 @@ class StakingController extends Controller
                 "Successfully withdrawn {$totalAmount} TRX (Principal: {$staking->amount} + Earnings: {$staking->earned_amount})"
             );
         });
+    }
+
+    public function getRealTimeProgress()
+    {
+        $userId = auth()->id();
+        
+        // Get fresh data without caching for real-time updates
+        $activeStakings = DB::table('stakings')
+            ->join('staking_plans', 'stakings.plan_id', '=', 'staking_plans.id')
+            ->where('stakings.user_id', $userId)
+            ->where('stakings.status', 'active')
+            ->select([
+                'stakings.id',
+                'stakings.amount',
+                'stakings.earned_amount',
+                'stakings.staked_at',
+                'stakings.last_reward_at',
+                'stakings.progress',
+                'stakings.updated_at',
+                'staking_plans.name as plan_name',
+                'staking_plans.duration',
+                'staking_plans.interest_rate'
+            ])
+            ->get()
+            ->map(function ($staking) {
+                $startDate = \Carbon\Carbon::parse($staking->staked_at);
+                $now = now();
+                
+                // Calculate daily progress and earnings
+                $lastReward = $staking->last_reward_at 
+                    ? \Carbon\Carbon::parse($staking->last_reward_at)
+                    : $startDate;
+                $hoursSinceLastReward = $lastReward->diffInHours($now);
+                
+                // Use database progress field updated by cron job
+                $dailyProgress = (float) $staking->progress;
+                
+                // Calculate earnings
+                $dailyEarnings = ($staking->amount * $staking->interest_rate) / 100;
+                $earnedToday = ($dailyProgress / 100) * $dailyEarnings;
+                
+                // Next payout time
+                $nextPayout = $lastReward->copy()->addHours(24);
+
+                return [
+                    'id' => $staking->id,
+                    'earned_amount' => number_format($staking->earned_amount, 6),
+                    'daily_earnings' => number_format($dailyEarnings, 6),
+                    'earned_today' => number_format($earnedToday, 6),
+                    'daily_progress' => round($dailyProgress, 2),
+                    'next_payout' => $nextPayout->format('M d, Y H:i'),
+                    'last_reward' => $lastReward->format('M d, Y H:i'),
+                    'hours_since_reward' => round($hoursSinceLastReward, 2),
+                    'updated_at' => $staking->updated_at
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $activeStakings,
+            'timestamp' => now()->format('Y-m-d H:i:s')
+        ]);
     }
 }

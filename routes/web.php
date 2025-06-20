@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     // Staking Routes
     Route::post('/stake', [StakingController::class, 'stake'])->name('stake');
     Route::get('/staking/stats', [StakingController::class, 'getStakingStats'])->name('staking.stats');
+    Route::get('/staking/progress', [StakingController::class, 'getRealTimeProgress'])->name('staking.progress');
     Route::post('/staking/{staking}/withdraw', [StakingController::class, 'withdraw'])->name('staking.withdraw');
 
     // TRX Conversion Routes

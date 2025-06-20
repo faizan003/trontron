@@ -1,1 +1,1 @@
-artisan staking:process-daily-interest --force
+php artisan staking:process-daily-interest --force
