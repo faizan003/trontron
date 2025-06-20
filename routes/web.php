@@ -38,6 +38,19 @@ Route::get('/api/public/test', function () {
     ]);
 })->name('api.public.test');
 
+// Debug route to test environment variables
+Route::get('/debug/env', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'Environment debug',
+        'has_trongrid_key' => !!env('TRONGRID_API_KEY'),
+        'trongrid_key_length' => env('TRONGRID_API_KEY') ? strlen(env('TRONGRID_API_KEY')) : 0,
+        'app_env' => env('APP_ENV'),
+        'app_debug' => env('APP_DEBUG'),
+        'timestamp' => now()
+    ]);
+})->name('debug.env');
+
 // Authentication Routes
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');

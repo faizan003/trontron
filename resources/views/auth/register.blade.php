@@ -505,34 +505,42 @@ async function initTronWeb() {
                     configData = await configResponse.json();
                     console.log('API config (primary route):', { success: configData.success, hasKey: !!configData.config?.trongrid_api_key });
                 } else {
-                    throw new Error('Primary route failed');
+                    throw new Error(`Primary route failed with status: ${configResponse.status}`);
                 }
             } catch (primaryError) {
-                console.log('Primary route failed, trying fallback...');
+                console.log('Primary route failed, trying fallback...', primaryError.message);
                 
                 // Try fallback route
-                configResponse = await fetch('/get-public-config', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                try {
+                    configResponse = await fetch('/get-public-config', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    if (!configResponse.ok) {
+                        throw new Error(`Fallback route failed with status: ${configResponse.status}`);
                     }
-                });
-                
-                if (!configResponse.ok) {
-                    throw new Error('Both primary and fallback routes failed');
+                    
+                    configData = await configResponse.json();
+                    console.log('API config (fallback route):', { success: configData.success, hasKey: !!configData.config?.trongrid_api_key });
+                } catch (fallbackError) {
+                    console.error('Both routes failed:', { primary: primaryError.message, fallback: fallbackError.message });
+                    throw new Error('Unable to fetch API configuration from server. Please check your internet connection and try again.');
                 }
-                
-                configData = await configResponse.json();
-                console.log('API config (fallback route):', { success: configData.success, hasKey: !!configData.config?.trongrid_api_key });
             }
             
             if (!configData.success) {
-                throw new Error('API configuration not available: ' + (configData.message || 'Unknown error'));
+                const errorMsg = configData.message || 'Unknown error';
+                console.error('API configuration error:', configData);
+                throw new Error('Server configuration error: ' + errorMsg);
             }
             
-            if (!configData.config.trongrid_api_key) {
-                throw new Error('TronGrid API key not configured. Please check your environment variables.');
+            if (!configData.config || !configData.config.trongrid_api_key) {
+                console.error('Missing TronGrid API key in config:', configData);
+                throw new Error('Server configuration incomplete. Please contact support if this issue persists.');
             }
 
             // Try to get TronWeb constructor from different possible locations

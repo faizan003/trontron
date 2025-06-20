@@ -59,10 +59,25 @@ class SecureApiController extends Controller
 
         RateLimiter::hit($key);
 
+        $trongridApiKey = env('TRONGRID_API_KEY');
+        
+        // Check if API key is configured
+        if (!$trongridApiKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'TronGrid API key not configured on server',
+                'debug' => [
+                    'env' => app()->environment(),
+                    'config_cached' => app()->configurationIsCached(),
+                ]
+            ], 500);
+        }
+
         return response()->json([
             'success' => true,
+            'hasKey' => true,
             'config' => [
-                'trongrid_api_key' => env('TRONGRID_API_KEY'),
+                'trongrid_api_key' => $trongridApiKey,
                 'network' => 'testnet',
                 'api_url' => 'https://nile.trongrid.io'
             ]
