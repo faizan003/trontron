@@ -10,33 +10,37 @@ Hostinger hosting environment blocks access to certain API configuration routes,
 
 ### Changes Made
 
-1. **Modified Registration Page** (`resources/views/auth/register.blade.php`)
-   - Removed API calls to `/api/public/config` and `/get-public-config`
-   - Embedded TronGrid API configuration directly in the JavaScript
-   - Added validation for embedded API key
+1. **Created Encrypted API Configuration System**
+   - `ApiConfig` model with encryption/decryption methods
+   - Database migration for `api_configs` table
+   - Artisan command `php artisan api:setup` for configuration
 
-2. **Updated Bootstrap Configuration** (`bootstrap/app.php`)
-   - Added API routes loading (though not needed for registration anymore)
+2. **Updated Controllers** (`app/Http/Controllers/SecureApiController.php`)
+   - Modified to use encrypted database storage instead of environment variables
+   - Better error handling and debugging information
 
-3. **Enhanced Error Handling**
-   - Better error messages for configuration issues
-   - Improved debugging information
+3. **Modified Registration Page** (`resources/views/auth/register.blade.php`)
+   - Updated to fetch configuration from `/api/public/config` endpoint
+   - Enhanced error handling for configuration issues
 
-4. **Cleaned Up Routes** (`routes/web.php`)
-   - Removed problematic public API config routes
-   - Added documentation comments
+4. **Updated Routes** (`routes/web.php`)
+   - Added multiple Hostinger-compatible endpoints:
+     - `/tron-config` (primary endpoint)
+     - `/get-tron-config` (ultra-simple fallback)
+     - `/config-test` (testing endpoint)
 
 ### Hostinger Compatibility
-- ✅ No API routes needed for registration
-- ✅ Configuration embedded directly in template
+- ✅ API configuration stored encrypted in database
+- ✅ No dependency on environment variables in production
 - ✅ Works with Hostinger's restrictions
-- ✅ Maintains security (API key only exposed to registration page)
+- ✅ Enhanced security with Laravel encryption
+- ✅ Centralized configuration management
 
 ### Deployment Steps for Hostinger
 
 1. Upload all modified files to your Hostinger account
 2. Ensure your `.env` file has `TRONGRID_API_KEY` set
-3. Run the deployment script:
+3. Run the deployment script (this will automatically set up the encrypted database configuration):
    ```bash
    ./deploy-hostinger-fix.sh
    ```
@@ -44,7 +48,12 @@ Hostinger hosting environment blocks access to certain API configuration routes,
    ```powershell
    .\deploy-hostinger-fix.ps1
    ```
-4. Test the registration page
+4. Alternatively, set up manually:
+   ```bash
+   php artisan migrate --force
+   php artisan api:setup
+   ```
+5. Test the registration page
 
 ### Environment Variables Required
 ```env
@@ -54,8 +63,12 @@ TRONGRID_API_KEY=your_actual_api_key_here
 ### Testing
 1. Go to your registration page
 2. Open browser console
-3. Look for: "Initializing TronWeb with embedded configuration..."
-4. Should see: "Using embedded config: {success: true, hasKey: true, network: 'testnet'}"
+3. Look for: "Fetching API configuration from encrypted database..."
+4. Should see: "API config retrieved: {success: true, hasKey: true, network: 'testnet'}"
+5. Test the API endpoints directly: 
+   - `/tron-config` (primary)
+   - `/get-tron-config` (fallback)
+   - `/config-test` (testing)
 
 ### Notes
 - Other parts of the application (dashboard, etc.) still use the `/api/config` route which works fine for authenticated users

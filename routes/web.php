@@ -20,9 +20,37 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Public API Configuration (using encrypted database storage)
-Route::get('/api/public/config', [App\Http\Controllers\SecureApiController::class, 'getPublicApiConfig'])
-    ->name('api.public.config');
+// TronGrid Configuration (Hostinger-compatible routes)
+Route::get('/tron-config', [App\Http\Controllers\ConfigController::class, 'getTronConfig'])
+    ->name('tron.config');
+
+Route::get('/config-test', [App\Http\Controllers\ConfigController::class, 'test'])
+    ->name('config.test');
+
+// Ultra-simple direct route for maximum Hostinger compatibility
+Route::get('/get-tron-config', function () {
+    try {
+        $config = App\Models\ApiConfig::getTronGridConfig();
+        
+        if (!$config || !$config['trongrid_api_key']) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Configuration not found'
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'hasKey' => true,
+            'config' => $config
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ], 500);
+    }
+})->name('get.tron.config');
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {

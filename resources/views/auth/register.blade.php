@@ -487,20 +487,54 @@ async function initTronWeb() {
         try {
             console.log('Fetching API configuration from encrypted database...');
             
-            // Get configuration from secure database storage
-            const configResponse = await fetch('/api/public/config', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+            // Get configuration from secure database storage (Hostinger-compatible endpoint)
+            let configResponse;
+            let configData;
+            
+            try {
+                // Try primary Hostinger-friendly endpoint
+                configResponse = await fetch('/tron-config', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!configResponse.ok) {
+                    throw new Error(`Primary endpoint failed: ${configResponse.status}`);
                 }
-            });
-            
-            if (!configResponse.ok) {
-                throw new Error(`Failed to fetch API configuration: ${configResponse.status}`);
+                
+                configData = await configResponse.json();
+                console.log('Config fetched from /tron-config endpoint');
+                
+            } catch (primaryError) {
+                console.log('Primary endpoint failed, trying ultra-simple fallback...', primaryError.message);
+                
+                // Ultra-simple fallback for maximum Hostinger compatibility
+                try {
+                    configResponse = await fetch('/get-tron-config', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (!configResponse.ok) {
+                        throw new Error(`Fallback endpoint failed: ${configResponse.status}`);
+                    }
+                    
+                    configData = await configResponse.json();
+                    console.log('Config fetched from /get-tron-config fallback endpoint');
+                    
+                } catch (fallbackError) {
+                    console.error('All endpoints failed:', { 
+                        primary: primaryError.message, 
+                        fallback: fallbackError.message 
+                    });
+                    throw new Error(`Unable to fetch configuration from server. Please check server configuration or contact support.`);
+                }
             }
-            
-            const configData = await configResponse.json();
             
             console.log('API config retrieved:', { 
                 success: configData.success, 
