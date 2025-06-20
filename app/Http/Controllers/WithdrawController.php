@@ -79,8 +79,16 @@ class WithdrawController extends Controller
     private function verifyTransaction($txid)
     {
         try {
+            // Get API key from encrypted database storage
+            $config = \App\Models\ApiConfig::getTronGridConfig();
+            $apiKey = $config['trongrid_api_key'] ?? null;
+            
+            if (!$apiKey) {
+                throw new \Exception('TronGrid API key not configured');
+            }
+            
             $response = Http::withHeaders([
-                'TRON-PRO-API-KEY' => env('TRONGRID_API_KEY')
+                'TRON-PRO-API-KEY' => $apiKey
             ])->get("https://nile.trongrid.io/wallet/gettransactionbyid", [
                 'value' => $txid
             ]);

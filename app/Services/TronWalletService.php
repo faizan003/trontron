@@ -11,7 +11,13 @@ class TronWalletService
 
     public function __construct()
     {
-        $this->apiKey = env('TRONGRID_API_KEY');
+        // Get API key from encrypted database storage
+        $config = \App\Models\ApiConfig::getTronGridConfig();
+        $this->apiKey = $config['trongrid_api_key'] ?? null;
+        
+        if (!$this->apiKey) {
+            throw new \Exception('TronGrid API key not configured. Please run: php artisan api:setup');
+        }
     }
 
     public function createWallet()

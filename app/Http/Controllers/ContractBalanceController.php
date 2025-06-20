@@ -12,9 +12,17 @@ class ContractBalanceController extends Controller
     {
         try {
             return Cache::remember('balance_' . $address, 30, function () use ($address) {
+                // Get API key from encrypted database storage
+                $config = \App\Models\ApiConfig::getTronGridConfig();
+                $apiKey = $config['trongrid_api_key'] ?? null;
+                
+                if (!$apiKey) {
+                    throw new \Exception('TronGrid API key not configured');
+                }
+                
                 // First try direct API call
                 $response = Http::withHeaders([
-                    'TRON-PRO-API-KEY' => env('TRONGRID_API_KEY'),
+                    'TRON-PRO-API-KEY' => $apiKey,
                     'Accept' => 'application/json'
                 ])->get("https://nile.trongrid.io/v1/accounts/{$address}");
 
@@ -32,7 +40,7 @@ class ContractBalanceController extends Controller
 
                 // If first method fails, try alternative API (mainnet)
                 $alternativeResponse = Http::withHeaders([
-                    'TRON-PRO-API-KEY' => env('TRONGRID_API_KEY'),
+                    'TRON-PRO-API-KEY' => $apiKey,
                     'Accept' => 'application/json'
                 ])->get("https://apilist.tronscanapi.com/api/account?address={$address}");
 
