@@ -49,24 +49,13 @@
                                 $daysRemaining = number_format(max(0, $duration - $daysElapsed), 2);
                                 $endDate = $staking->staked_at->copy()->addDays($duration);
 
-                                // Calculate daily progress
+                                // Calculate daily progress - use the database progress field updated by cron job
                                 $lastRewardTime = $staking->last_reward_at ?? $staking->staked_at;
                                 $hoursSinceLastReward = $lastRewardTime->diffInHours(now());
                                 
-                                // Check if progress was recently reset (reward was processed)
-                                // If last_reward_at was updated within the last hour and progress is 0, use time-based calculation
-                                $progressRecentlyReset = $staking->last_reward_at && 
-                                                       $staking->last_reward_at->diffInMinutes(now()) < 60 && 
-                                                       $staking->progress == 0;
-                                
-                                if ($progressRecentlyReset) {
-                                    // Use time since last reward for fresh calculation
-                                    $dailyProgress = min(100, ($hoursSinceLastReward / 24) * 100);
-                                } else {
-                                    // Use database progress field if available, otherwise calculate from time
-                                    $calculatedProgress = min(100, ($hoursSinceLastReward / 24) * 100);
-                                    $dailyProgress = $staking->progress > 0 ? $staking->progress : $calculatedProgress;
-                                }
+                                // Always use the database progress field that's updated by the cron job
+                                // This ensures consistency between backend cron updates and frontend display
+                                $dailyProgress = (float) $staking->progress;
                                 
                                 $nextPayout = $lastRewardTime->copy()->addHours(24);
                                 $earnedSoFar = ($dailyProgress / 100) * $dailyEarnings;

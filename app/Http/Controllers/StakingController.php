@@ -82,10 +82,10 @@ class StakingController extends Controller
     {
         $userId = auth()->id();
         
-        // Cache for 1 minute to reduce load
+        // Cache for 30 seconds to show updated progress more frequently
         $cacheKey = "staking_stats_{$userId}";
         
-        $activeStakings = cache()->remember($cacheKey, 60, function () use ($userId) {
+        $activeStakings = cache()->remember($cacheKey, 30, function () use ($userId) {
             return DB::table('stakings')
                 ->join('staking_plans', 'stakings.plan_id', '=', 'staking_plans.id')
                 ->where('stakings.user_id', $userId)
@@ -113,25 +113,15 @@ class StakingController extends Controller
                     $progress = min(100, ($daysElapsed / $totalDays) * 100);
                     $daysRemaining = max(0, $totalDays - $daysElapsed);
 
-                    // Calculate daily progress
+                    // Calculate daily progress - use the database progress field updated by cron job
                     $lastReward = $staking->last_reward_at 
                         ? \Carbon\Carbon::parse($staking->last_reward_at)
                         : $startDate;
                     $hoursSinceLastReward = $lastReward->diffInHours($now);
                     
-                    // Check if progress was recently reset (reward was processed)
-                    $progressRecentlyReset = $staking->last_reward_at && 
-                                           \Carbon\Carbon::parse($staking->last_reward_at)->diffInMinutes($now) < 60 && 
-                                           $staking->progress == 0;
-                    
-                    if ($progressRecentlyReset) {
-                        // Use time since last reward for fresh calculation
-                        $dailyProgress = min(100, ($hoursSinceLastReward / 24) * 100);
-                    } else {
-                        // Use database progress field if available, otherwise calculate from time
-                        $calculatedProgress = min(100, ($hoursSinceLastReward / 24) * 100);
-                        $dailyProgress = $staking->progress > 0 ? $staking->progress : $calculatedProgress;
-                    }
+                    // Always use the database progress field that's updated by the cron job
+                    // This ensures consistency between backend cron updates and frontend display
+                    $dailyProgress = (float) $staking->progress;
 
                     // Calculate earnings
                     $dailyEarnings = ($staking->amount * $staking->interest_rate) / 100;
