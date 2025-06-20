@@ -72,7 +72,6 @@ class ProcessDailyInterest extends Command
                         try {
                             // Update staking
                             $updateData = [
-                                'progress' => 0,
                                 'earned_amount' => DB::raw("earned_amount + {$dailyEarnings}"),
                                 'last_reward_at' => now()
                             ];
@@ -101,7 +100,7 @@ class ProcessDailyInterest extends Command
                             $this->info("- After update:");
                             $this->info("  * New earned amount: " . ($staking->earned_amount + $dailyEarnings));
                             $this->info("  * New user total earnings: " . ($staking->user->total_earnings + $dailyEarnings));
-                            $this->info("  * Progress reset to 0%");
+                            $this->info("  * Last reward time updated, progress will be recalculated");
                         } catch (\Exception $e) {
                             DB::rollBack();
                             throw $e;
