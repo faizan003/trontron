@@ -38,4 +38,4 @@ Write-Host "📋 Next steps:" -ForegroundColor Cyan
 Write-Host "1. Make sure your .env file has TRONGRID_API_KEY set" -ForegroundColor White
 Write-Host "2. Test the registration page" -ForegroundColor White
 Write-Host "3. Check browser console for any remaining errors" -ForegroundColor White
-Write-Host "4. If issues persist, check /debug/env route for environment debugging" -ForegroundColor White 
+Write-Host "4. Registration now uses embedded configuration (no API routes needed)" -ForegroundColor White 

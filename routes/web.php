@@ -20,36 +20,8 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Public API Configuration (for registration)
-Route::get('/api/public/config', [App\Http\Controllers\SecureApiController::class, 'getPublicApiConfig'])
-    ->name('api.public.config');
-
-// Alternative route for hostinger compatibility
-Route::get('/get-public-config', [App\Http\Controllers\SecureApiController::class, 'getPublicApiConfig'])
-    ->name('public.config.alt');
-
-// Debug route to test if routes are working
-Route::get('/api/public/test', function () {
-    return response()->json([
-        'success' => true,
-        'message' => 'API routes are working',
-        'timestamp' => now(),
-        'env' => app()->environment()
-    ]);
-})->name('api.public.test');
-
-// Debug route to test environment variables
-Route::get('/debug/env', function () {
-    return response()->json([
-        'success' => true,
-        'message' => 'Environment debug',
-        'has_trongrid_key' => !!env('TRONGRID_API_KEY'),
-        'trongrid_key_length' => env('TRONGRID_API_KEY') ? strlen(env('TRONGRID_API_KEY')) : 0,
-        'app_env' => env('APP_ENV'),
-        'app_debug' => env('APP_DEBUG'),
-        'timestamp' => now()
-    ]);
-})->name('debug.env');
+// Note: Public API Configuration routes removed due to Hostinger restrictions
+// Registration now uses embedded configuration for better compatibility
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {

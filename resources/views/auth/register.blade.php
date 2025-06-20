@@ -483,63 +483,39 @@ async function initTronWeb() {
             'window.TronWeb.TronWeb': typeof window.TronWeb?.TronWeb
         });
 
-        // Initialize TronWeb with secure configuration
+        // Initialize TronWeb with embedded configuration (Hostinger compatible)
         try {
-            // Get configuration from secure API endpoint with fallback
-            console.log('Fetching API configuration...');
+            console.log('Initializing TronWeb with embedded configuration...');
             
-            let configData;
-            let configResponse;
+            // Embedded configuration for Hostinger compatibility
+            // This bypasses the need for API config routes that Hostinger blocks
+            const embeddedApiKey = '{{ env("TRONGRID_API_KEY") }}';
+            const configData = {
+                success: true,
+                config: {
+                    trongrid_api_key: embeddedApiKey,
+                    network: 'testnet',
+                    api_url: 'https://nile.trongrid.io'
+                }
+            };
             
-            // Try primary route first
-            try {
-                configResponse = await fetch('/api/public/config', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
+            // Additional validation for embedded config
+            if (!embeddedApiKey || embeddedApiKey.length < 10) {
+                console.error('Invalid embedded API key:', { 
+                    hasKey: !!embeddedApiKey, 
+                    keyLength: embeddedApiKey ? embeddedApiKey.length : 0 
                 });
-                
-                if (configResponse.ok) {
-                    configData = await configResponse.json();
-                    console.log('API config (primary route):', { success: configData.success, hasKey: !!configData.config?.trongrid_api_key });
-                } else {
-                    throw new Error(`Primary route failed with status: ${configResponse.status}`);
-                }
-            } catch (primaryError) {
-                console.log('Primary route failed, trying fallback...', primaryError.message);
-                
-                // Try fallback route
-                try {
-                    configResponse = await fetch('/get-public-config', {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    
-                    if (!configResponse.ok) {
-                        throw new Error(`Fallback route failed with status: ${configResponse.status}`);
-                    }
-                    
-                    configData = await configResponse.json();
-                    console.log('API config (fallback route):', { success: configData.success, hasKey: !!configData.config?.trongrid_api_key });
-                } catch (fallbackError) {
-                    console.error('Both routes failed:', { primary: primaryError.message, fallback: fallbackError.message });
-                    throw new Error('Unable to fetch API configuration from server. Please check your internet connection and try again.');
-                }
+                throw new Error('Server configuration error: TronGrid API key not properly configured. Please contact support.');
             }
             
-            if (!configData.success) {
-                const errorMsg = configData.message || 'Unknown error';
-                console.error('API configuration error:', configData);
-                throw new Error('Server configuration error: ' + errorMsg);
-            }
+            console.log('Using embedded config:', { 
+                success: configData.success, 
+                hasKey: !!configData.config?.trongrid_api_key,
+                network: configData.config.network 
+            });
             
             if (!configData.config || !configData.config.trongrid_api_key) {
-                console.error('Missing TronGrid API key in config:', configData);
+                console.error('Missing TronGrid API key in embedded config:', configData);
                 throw new Error('Server configuration incomplete. Please contact support if this issue persists.');
             }
 
