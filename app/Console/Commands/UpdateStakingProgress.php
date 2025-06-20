@@ -83,8 +83,13 @@ class UpdateStakingProgress extends Command
                     $this->line("- Last reward time: {$lastRewardTime}");
                     $this->line("- Hours since last reward: {$hoursSinceLastReward}");
 
-                    // Calculate progress percentage (0-100)
-                    $progress = min(100, ($hoursSinceLastReward / 24) * 100);
+                    // Calculate progress percentage (0-100) - reset every 24 hours
+                    $hoursInCurrentCycle = $hoursSinceLastReward % 24;
+                    $progress = ($hoursInCurrentCycle / 24) * 100;
+                    $completedCycles = floor($hoursSinceLastReward / 24);
+
+                    $this->line("- Hours in current cycle: {$hoursInCurrentCycle}");
+                    $this->line("- Completed cycles: {$completedCycles}");
 
                     // Update progress
                     DB::table('stakings')
@@ -93,9 +98,12 @@ class UpdateStakingProgress extends Command
 
                     $this->info("- Progress updated to {$progress}%");
 
-                    if ($progress >= 100) {
-                        $this->info("- 24 hours completed, ready for reward");
-                        Log::info("Staking ID {$staking->id} completed 24-hour cycle and ready for reward");
+                    if ($hoursSinceLastReward >= 24) {
+                        $this->info("- ⭐ REWARD DUE: {$completedCycles} cycle(s) completed, ready for reward");
+                        Log::info("Staking ID {$staking->id} has {$completedCycles} completed cycles and is ready for reward");
+                    } else {
+                        $hoursRemaining = 24 - $hoursInCurrentCycle;
+                        $this->line("- Next reward in: {$hoursRemaining} hours");
                     }
                 } catch (\Exception $e) {
                     $this->error("Error processing staking {$staking->id}: " . $e->getMessage());

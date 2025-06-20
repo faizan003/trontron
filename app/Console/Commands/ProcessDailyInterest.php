@@ -33,15 +33,13 @@ class ProcessDailyInterest extends Command
         try {
             DB::beginTransaction();
 
-            // Get all active stakings
-            $activeStakings = Staking::where('status', '=', 'active')
-                ->where(function ($query) {
-                    $query->whereNull('last_reward_at')
-                        ->orWhereRaw('TIMESTAMPDIFF(HOUR, COALESCE(last_reward_at, staked_at), NOW()) >= 24');
-                })
-                ->get();
+            // Get all active stakings and check reward eligibility in PHP
+            $activeStakings = Staking::where('status', '=', 'active')->get();
 
             $this->info("Found " . $activeStakings->count() . " active stakings");
+            
+            $processedCount = 0;
+            $skippedCount = 0;
 
             foreach ($activeStakings as $staking) {
                 try {
@@ -54,6 +52,7 @@ class ProcessDailyInterest extends Command
                     $this->info("- Current time: " . now());
 
                     if ($hoursSinceLastReward >= 24) {
+                        $processedCount++;
                         $dailyEarnings = ($staking->amount * $staking->plan->interest_rate) / 100;
 
                         // Check if staking duration is completed
@@ -106,7 +105,8 @@ class ProcessDailyInterest extends Command
                             throw $e;
                         }
                     } else {
-                        $this->info("- Skipping: Not enough time elapsed");
+                        $skippedCount++;
+                        $this->info("- Skipping: Not enough time elapsed ({$hoursSinceLastReward} hours < 24 hours)");
                     }
                 } catch (\Exception $e) {
                     $this->error("Error processing staking {$staking->id}: " . $e->getMessage());
@@ -115,6 +115,7 @@ class ProcessDailyInterest extends Command
 
             DB::commit();
             $this->info("Process completed successfully");
+            $this->info("Summary: {$processedCount} rewards processed, {$skippedCount} stakings skipped");
 
         } catch (\Exception $e) {
             DB::rollBack();
