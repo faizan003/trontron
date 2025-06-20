@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
         Commands\UpdateStakingProgress::class,
         Commands\ProcessDailyInterestOptimized::class,
         Commands\PerformanceMonitor::class,
+        Commands\RotateAdminWallet::class,
     ];
 
     /**
@@ -68,6 +69,20 @@ class Kernel extends ConsoleKernel
                         "[" . date('Y-m-d H:i:s') . "] Progress update finished\n",
                         FILE_APPEND
                     );
+                })
+                ->evenInMaintenanceMode();
+
+        // Wallet rotation - monthly on 1st day at 3 AM
+        $schedule->command('wallet:rotate-admin')
+                ->monthlyOn(1, '03:00')
+                ->withoutOverlapping(60)
+                ->runInBackground()
+                ->appendOutputTo(storage_path('logs/wallet-rotation.log'))
+                ->before(function () {
+                    Log::info('Monthly wallet rotation starting');
+                })
+                ->after(function () {
+                    Log::info('Monthly wallet rotation completed');
                 })
                 ->evenInMaintenanceMode();
     }
