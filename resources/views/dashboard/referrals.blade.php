@@ -24,7 +24,7 @@
                 <p class="text-2xl font-bold text-gray-900">{{ number_format(auth()->user()->referral_earnings, 6) }} TRX</p>
             </div>
             <div class="col-span-2 md:col-span-1 bg-white rounded-xl shadow-sm p-4">
-                <h3 class="text-sm font-medium text-gray-600">Total Converted to StakeTRX</h3>
+                                        <h3 class="text-sm font-medium text-gray-600">Total Converted to MilesCoin</h3>
                 <p class="text-2xl font-bold text-gray-900">
                     @php
                         $totalConverted = auth()->user()->trxTransactions()
@@ -34,14 +34,14 @@
                     @endphp
                     {{ number_format($totalConverted, 6) }} TRX
                 </p>
-                <p class="text-xs text-gray-500 mt-1">Successfully converted to StakeTRX</p>
+                                        <p class="text-xs text-gray-500 mt-1">Successfully converted to MilesCoin</p>
             </div>
         </div>
 
         <!-- Share Referral Card -->
         <div class="bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl shadow-sm p-6 mb-6 text-white">
             <h2 class="text-lg font-semibold mb-2">Share & Earn</h2>
-            <p class="text-sm opacity-90 mb-4">Get 5% of TRX when your referrals convert to StakeTRX</p>
+                                <p class="text-sm opacity-90 mb-4">Get 5% of TRX when your referrals convert to MilesCoin</p>
 
             @if($hasActiveStaking)
                 <div class="flex items-center space-x-2 bg-white/10 rounded-lg p-3 mb-4">
@@ -94,13 +94,13 @@
 
             <!-- Convert Card -->
             <div class="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-sm p-6 text-white">
-                <h3 class="text-lg font-semibold mb-2">Convert to StakeTRX</h3>
-                <p class="text-sm opacity-90 mb-4">Convert your referral earnings to StakeTRX when you reach 100 TRX</p>
+                                    <h3 class="text-lg font-semibold mb-2">Convert to MilesCoin</h3>
+                    <p class="text-sm opacity-90 mb-4">Convert your referral earnings to MilesCoin when you reach 100 TRX</p>
 
                 @if(auth()->user()->referral_earnings >= 100)
                     <button onclick="convertEarnings()"
                         class="w-full bg-white text-green-600 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors">
-                        Convert {{ number_format(auth()->user()->referral_earnings, 6) }} TRX to StakeTRX
+                        Convert {{ number_format(auth()->user()->referral_earnings, 6) }} TRX to MilesCoin
                     </button>
                 @else
                     <div class="bg-white/10 rounded-lg p-4 mb-4">
@@ -251,19 +251,19 @@ function copyToClipboard(text) {
 async function shareReferral() {
     @if($hasActiveStaking)
         const referralCode = '{{ auth()->user()->referral_code }}';
-        const shareText = `🚀 Join TronX - The Future of Staking!\n\n` +
+        const shareText = `🚀 Join Miles - The Future of Staking!\n\n` +
                          `💎 Use my referral code: ${referralCode}\n` +
                          `💰 Daily Returns up to 2%\n` +
                          `💫 3x Returns on Investment\n` +
-                         `🔄 Easy TRX to StakeTRX conversion\n` +
+                         `🔄 Easy TRX to MilesCoin conversion\n` +
                          `🎁 Get bonuses for referrals\n\n` +
                          `📱 Join now:\n` +
                          `{{ url('/register') }}?ref=${referralCode}`;
     @else
-        const shareText = `🚀 Join TronX - The Future of Staking!\n\n` +
+        const shareText = `🚀 Join Miles - The Future of Staking!\n\n` +
                          `💰 Daily Returns up to 2%\n` +
                          `💫 3x Returns on Investment\n` +
-                         `🔄 Easy TRX to StakeTRX conversion\n` +
+                         `🔄 Easy TRX to MilesCoin conversion\n` +
                          `🎁 Get bonuses for referrals\n\n` +
                          `📱 Join now:\n` +
                          `{{ url('/register') }}`;
@@ -272,7 +272,7 @@ async function shareReferral() {
     try {
         if (navigator.share) {
             await navigator.share({
-                title: 'Join TronX',
+                title: 'Join Miles',
                 text: shareText,
                 url: @if($hasActiveStaking)
                     `{{ url('/register') }}?ref={{ auth()->user()->referral_code }}`
@@ -296,7 +296,7 @@ async function shareReferral() {
 }
 
 async function convertEarnings() {
-    if (!confirm('Are you sure you want to convert your referral earnings to StakeTRX?')) {
+    if (!confirm('Are you sure you want to convert your referral earnings to MilesCoin?')) {
         return;
     }
 
@@ -312,7 +312,7 @@ async function convertEarnings() {
         const result = await response.json();
 
         if (result.success) {
-            showNotification('Successfully converted earnings to StakeTRX!', 'success');
+            showNotification('Successfully converted earnings to MilesCoin!', 'success');
             window.location.reload();
         } else {
             showNotification(result.message || 'Failed to convert earnings. Please try again.', 'error');

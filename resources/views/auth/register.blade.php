@@ -11,7 +11,7 @@
                     <path d="M16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
                 </svg>
             </div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Join TronX</h1>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Join Miles</h1>
             <p class="text-gray-600 text-sm">Create your staking account</p>
         </div>
 
@@ -263,15 +263,15 @@
                 <div class="space-y-6 text-gray-700">
                     <!-- Company Info -->
                     <div>
-                        <h4 class="text-lg font-semibold text-gray-900 mb-3">About TronX</h4>
-                        <p class="text-sm leading-6">
-                            TronX is a decentralized staking platform built on the TRON blockchain. We provide secure and transparent staking services to help you earn passive income through cryptocurrency staking.
+                        <h4 class="text-lg font-semibold text-gray-900 mb-3">About Miles</h4>
+                        <p class="text-gray-700 mb-4">
+                            Miles is a decentralized staking platform built on the TRON blockchain. We provide secure and transparent staking services to help you earn passive income through cryptocurrency staking.
                         </p>
                     </div>
 
                     <!-- How We Work -->
                     <div>
-                        <h4 class="text-lg font-semibold text-gray-900 mb-3">How TronX Works</h4>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-3">How Miles Works</h4>
                         <ul class="text-sm space-y-2 list-disc list-inside">
                             <li>Create an account and get a secure TRON wallet automatically</li>
                             <li>Choose from our three staking plans: Premium, Advanced, or Elite</li>
@@ -353,7 +353,7 @@
                             <li>Staking rewards are calculated daily at 00:00 UTC</li>
                             <li>Withdrawals processed within 10 to 20 minutes</li>
                             <li>Referral commissions paid instantly upon successful stakes</li>
-                            <li>TronX reserves the right to modify terms with prior notice</li>
+                            <li>Miles reserves the right to modify terms with prior notice</li>
                             <li>Users responsible for their own tax obligations</li>
                         </ul>
                     </div>

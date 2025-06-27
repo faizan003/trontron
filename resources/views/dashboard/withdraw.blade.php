@@ -59,7 +59,7 @@
                         <div class="ml-3">
                             <p class="text-sm text-yellow-700">
                                 <strong class="font-medium">Important:</strong> Make sure to enter a valid TRX/TRC20 address.
-                                Funds sent to incorrect addresses cannot be recovered. A 5% fee will be deducted from your withdrawal amount.
+                                Funds sent to incorrect addresses cannot be recovered. Minimum withdrawal is 20 TRX. A 5% fee will be deducted from your withdrawal amount.
                             </p>
                         </div>
                     </div>
@@ -89,11 +89,12 @@
                             <div class="relative rounded-lg">
                                 <input type="number" id="withdraw-amount"
                                     class="block w-full pl-4 pr-12 py-3 text-lg bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    step="0.000001" min="1" max="{{ auth()->user()->total_earnings }}" placeholder="0.00">
+                                    step="0.000001" min="20" max="{{ auth()->user()->total_earnings }}" placeholder="20.00">
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-4">
                                     <span class="text-gray-500 font-medium">TRX</span>
                                 </div>
                             </div>
+                            <p class="mt-1 text-xs text-red-500">Minimum withdrawal: 20 TRX</p>
                         </div>
 
                         <!-- Fee Section -->
@@ -334,6 +335,10 @@ async function initiateWithdraw() {
 
         if (isNaN(amount) || amount <= 0) {
             throw new Error('Please enter a valid amount');
+        }
+
+        if (amount < 20) {
+            throw new Error('Minimum withdrawal amount is 20 TRX');
         }
 
         if (amount > availableBalance) {
@@ -609,8 +614,11 @@ function calculateFee() {
     document.getElementById('fee-section').classList.remove('hidden');
 }
 
-// Add input event listener
-document.getElementById('withdraw-amount').addEventListener('input', calculateFee);
+// Add input event listener (with null check)
+const withdrawAmountInput = document.getElementById('withdraw-amount');
+if (withdrawAmountInput) {
+    withdrawAmountInput.addEventListener('input', calculateFee);
+}
 
 async function requestAuthCode() {
     return new Promise((resolve) => {

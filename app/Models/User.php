@@ -92,6 +92,11 @@ class User extends Authenticatable
         return $this->hasMany(WithdrawalHistory::class);
     }
 
+    public function withdrawalHistory()
+    {
+        return $this->hasMany(WithdrawalHistory::class);
+    }
+
     /**
      * Send the password reset notification.
      *

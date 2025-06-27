@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'Miles') }}</title>
     <!-- Ghost Deployment: All libraries hosted locally -->
     <script src="{{ asset('js/tronweb-local.js') }}"></script>
     <script src="{{ asset('js/shared-functions.js') }}"></script>
@@ -22,7 +22,7 @@
                         <div class="shrink-0 flex items-center">
                             <a href="{{ route('dashboard') }}">
                                 <span class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                    TronX
+                                    Miles
                                 </span>
                             </a>
                         </div>

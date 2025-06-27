@@ -103,23 +103,25 @@
                     </div>
                 </div>
 
-                <!-- StakeTRX Balance Section -->
-                <div class="bg-gradient-to-br from-red-50 to-blue-50 rounded-xl p-6">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">StakeTRX Balance</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-sm text-gray-600">Available for Staking</label>
-                            <div class="text-2xl font-bold text-gray-800">
-                                {{ number_format(auth()->user()->wallet->tronstake_balance ?? 0, 6) }} StakeTRX
+                <!-- MilesCoin Balance Section -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">MilesCoin Balance</h2>
+                    <div class="bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-3xl font-bold text-purple-800">
+                                    {{ number_format(auth()->user()->wallet->miles_balance ?? 0, 6) }} MSC
+                                </p>
+                                <p class="text-sm text-gray-600 mt-1">Available for staking</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Convert TRX to StakeTRX Section -->
+            <!-- Convert TRX to MilesCoin Section -->
             <div class="mt-8 bg-gradient-to-br from-blue-50 to-red-50 rounded-xl p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">Convert TRX to StakeTRX</h3>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Convert TRX to MilesCoin</h3>
                 <div class="space-y-4">
                     <div class="flex items-center space-x-2">
                         <div class="flex-1">
@@ -131,7 +133,7 @@
                         <div class="pt-8">
                             <button onclick="checkAndConvert()"
                                 class="bg-gradient-to-r from-blue-600 to-red-600 hover:from-blue-700 hover:to-red-700 text-white px-6 py-2 rounded-lg transition-all transform hover:scale-105">
-                                Convert to StakeTRX
+                                Convert to MilesCoin
                             </button>
                         </div>
                     </div>
@@ -386,7 +388,7 @@ async function checkAndConvert() {
         }
 
         // Show confirmation
-        if (!confirm(`Are you sure you want to convert ${amount} TRX to StakeTRX?`)) {
+        if (!confirm(`Are you sure you want to convert ${amount} TRX to MilesCoin?`)) {
             return;
         }
 
@@ -410,7 +412,7 @@ async function checkAndConvert() {
                 await new Promise(resolve => setTimeout(resolve, 3000));
 
                 // Send transaction info to backend
-                const response = await fetch('{{ route("convert.staketrx") }}', {
+                const response = await fetch('{{ route("convert.milescoin") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -431,7 +433,7 @@ async function checkAndConvert() {
 
                 statusDiv.innerHTML = `
                     <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
-                        Successfully converted ${amount} TRX to StakeTRX!
+                        Successfully converted ${amount} TRX to MilesCoin!
                         <div class="text-sm mt-2">
                             Transaction ID: ${transaction.txid || transaction.transaction.txID}
                         </div>
@@ -459,7 +461,7 @@ async function checkAndConvert() {
             if (txError.transaction?.txID) {
                 // Proceed with backend update
                 try {
-                    const response = await fetch('{{ route("convert.staketrx") }}', {
+                    const response = await fetch('{{ route("convert.milescoin") }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -480,7 +482,7 @@ async function checkAndConvert() {
 
                     statusDiv.innerHTML = `
                         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
-                            Successfully converted ${amount} TRX to StakeTRX!
+                            Successfully converted ${amount} TRX to MilesCoin!
                             <div class="text-sm mt-2">
                                 Transaction ID: ${txError.transaction.txID}
                             </div>

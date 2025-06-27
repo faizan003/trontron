@@ -43,7 +43,7 @@ class CustomResetPasswordNotification extends Notification
         ], false));
 
         return (new MailMessage)
-            ->subject('🔐 Reset Your TronX Password')
+            ->subject('🔐 Reset Your Miles Password')
             ->view('emails.reset-password', [
                 'user' => $notifiable,
                 'resetUrl' => $resetUrl,

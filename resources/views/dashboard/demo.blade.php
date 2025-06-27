@@ -26,16 +26,16 @@
                                 <div id="balance-status" class="text-xs text-gray-500 mt-1 hidden"></div>
                             </div>
 
-                            <!-- StakeTRX Balance -->
-                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h2 class="text-base md:text-lg font-semibold text-gray-900">StakeTRX Balance</h2>
+                                        <!-- MilesCoin Balance -->
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-base md:text-lg font-semibold text-gray-900">MilesCoin Balance</h2>
                                 </div>
                                 <div class="flex items-baseline space-x-2">
                                     <span class="text-2xl font-bold text-gray-900">
-                                        {{ number_format(auth()->user()->wallet->tronstake_balance ?? 0, 6) }}
+                                        {{ number_format(auth()->user()->wallet->miles_balance ?? 0, 6) }}
                                     </span>
-                                    <span class="text-gray-600">StakeTRX</span>
+                                    <span class="text-gray-600">MSC</span>
                                 </div>
                             </div>
                         </div>
@@ -70,18 +70,41 @@
                             <div class="w-full">
                                 <label for="convert-amount" class="block text-sm font-medium text-gray-700 mb-2">Amount to Convert</label>
                                 <div class="relative rounded-lg">
-                                    <input type="number" id="convert-amount"
-                                        class="block w-full pl-4 pr-12 py-3 text-lg bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        step="0.000001" min="1" max="{{ auth()->user()->wallet->balance }}" placeholder="0.00">
+                                                                    <input type="number" id="convert-amount"
+                                    class="block w-full pl-4 pr-12 py-3 text-lg bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    step="0.000001" min="1" max="{{ auth()->user()->wallet->balance }}" placeholder="0.00"
+                                    oninput="calculateConversionFee()">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-4">
                                         <span class="text-gray-500 font-medium">TRX</span>
                                     </div>
-                                </div>
-                            </div>
+                                                              </div>
+                          </div>
 
-                            <button onclick="checkAndConvert()"
+                          <!-- Conversion Fee Breakdown -->
+                          <div id="fee-breakdown" class="bg-blue-50 rounded-lg p-4 hidden">
+                              <h4 class="text-sm font-medium text-blue-900 mb-3">Conversion Details</h4>
+                              <div class="space-y-2 text-sm">
+                                  <div class="flex justify-between">
+                                      <span class="text-blue-700">Amount to Convert:</span>
+                                      <span class="font-medium text-blue-900"><span id="input-amount">0</span> TRX</span>
+                                  </div>
+                                  <div class="flex justify-between">
+                                      <span class="text-blue-700">Conversion Fee (1%):</span>
+                                      <span class="font-medium text-red-600"><span id="fee-amount">0</span> TRX</span>
+                                  </div>
+                                  <div class="border-t border-blue-200 pt-2 flex justify-between">
+                                      <span class="text-blue-700 font-medium">You'll Receive:</span>
+                                      <span class="font-bold text-green-600"><span id="receive-amount">0</span> MSC</span>
+                                  </div>
+                              </div>
+                              <div class="mt-3 p-2 bg-blue-100 rounded text-xs text-blue-800">
+                                  <strong>Note:</strong> The full amount will be transferred from your wallet, but you'll receive the amount after the 1% conversion fee.
+                              </div>
+                          </div>
+
+                          <button onclick="checkAndConvert()"
                                 class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg text-base font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow hover:shadow-lg">
-                                Convert to StakeTRX
+                                Convert to MilesCoin
                             </button>
                         </div>
                         <div id="conversion-status" class="text-sm"></div>
@@ -217,6 +240,30 @@ async function initTronWeb() {
     } catch (error) {
         console.error('TronWeb initialization error:', error);
         throw new Error('Failed to initialize TronWeb');
+    }
+}
+
+// Fee calculation function
+function calculateConversionFee() {
+    const input = document.getElementById('convert-amount');
+    const feeBreakdown = document.getElementById('fee-breakdown');
+    const inputAmountSpan = document.getElementById('input-amount');
+    const feeAmountSpan = document.getElementById('fee-amount');
+    const receiveAmountSpan = document.getElementById('receive-amount');
+    
+    const amount = parseFloat(input.value) || 0;
+    
+    if (amount > 0) {
+        const fee = amount * 0.01; // 1% fee
+        const receiveAmount = amount - fee;
+        
+        inputAmountSpan.textContent = amount.toFixed(6);
+        feeAmountSpan.textContent = fee.toFixed(6);
+        receiveAmountSpan.textContent = receiveAmount.toFixed(6);
+        
+        feeBreakdown.classList.remove('hidden');
+    } else {
+        feeBreakdown.classList.add('hidden');
     }
 }
 
@@ -409,7 +456,7 @@ async function checkAndConvert() {
             if (transaction.result || transaction.txid) {
                 await new Promise(resolve => setTimeout(resolve, 3000));
 
-                const response = await fetch('{{ route("convert.staketrx") }}', {
+                const response = await fetch('{{ route("convert.milescoin") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -491,7 +538,7 @@ async function checkAndConvert() {
 
             if (txError.transaction?.txID) {
                 try {
-                    const response = await fetch('{{ route("convert.staketrx") }}', {
+                    const response = await fetch('{{ route("convert.milescoin") }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

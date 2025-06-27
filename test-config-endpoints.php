@@ -2,7 +2,7 @@
 /**
  * Simple test script to verify TronGrid config endpoints
  * Usage: php test-config-endpoints.php [base_url]
- * Example: php test-config-endpoints.php https://tronxearn.site
+ * Example: php test-config-endpoints.php https://your-miles-site.com
  */
 
 $baseUrl = $argv[1] ?? 'http://localhost:8000';

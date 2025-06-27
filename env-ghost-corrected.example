@@ -1,7 +1,7 @@
 # 🥷 GHOST DEPLOYMENT ENVIRONMENT - CORRECTED
 # Copy this to .env to fix critical security violations
 
-APP_NAME=TronX
+APP_NAME=Miles
 APP_ENV=production
 APP_KEY=base64:gDiF1MtnZHj9SFnZBMBxPUtXgcVIcD+4AH5cDoDC5OM=
 APP_DEBUG=false

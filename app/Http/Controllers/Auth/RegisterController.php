@@ -22,8 +22,8 @@ class RegisterController extends Controller
     protected function generateUniqueReferralCode()
     {
         do {
-            // Generate a code with TRONX prefix and 6 random numbers
-            $code = 'TRONX' . str_pad(random_int(1, 999999), 6, '0', STR_PAD_LEFT);
+            // Generate a code with MILES prefix and 6 random numbers
+            $code = 'MILES' . str_pad(random_int(1, 999999), 6, '0', STR_PAD_LEFT);
         } while (User::where('referral_code', $code)->exists());
 
         return $code;

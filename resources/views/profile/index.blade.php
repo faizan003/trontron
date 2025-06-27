@@ -99,8 +99,8 @@
                 <!-- Account Statistics -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4">
-                        <h3 class="text-sm font-medium text-gray-600">StakeTRX Balance</h3>
-                        <p class="text-xl font-bold text-gray-900">{{ number_format(auth()->user()->wallet->tronstake_balance, 6) }} StakeTRX</p>
+                                            <h3 class="text-sm font-medium text-gray-600">MilesCoin Balance</h3>
+                    <p class="text-xl font-bold text-gray-900">{{ number_format(auth()->user()->wallet->miles_balance, 6) }} MSC</p>
                     </div>
 
                     <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4">
@@ -576,11 +576,11 @@ async function copyPrivateKey() {
 
 async function shareReferral() {
     const referralCode = '{{ auth()->user()->referral_code }}';
-    const shareText = `🚀 Join TronX - The Future of Staking!\n\n` +
+                const shareText = `🚀 Join Miles - The Future of Staking!\n\n` +
                      `💎 Use my referral code: ${referralCode}\n` +
                      `💰 Daily Returns up to 2%\n` +
                      `💫 3x Returns on Investment\n` +
-                     `🔄 Easy TRX to StakeTRX conversion\n` +
+                     `🔄 Easy TRX to MilesCoin conversion\n` +
                      `🎁 Get bonuses for referrals\n\n` +
                      `📱 Join now:\n` +
                      `{{ url('/register') }}?ref=${referralCode}`;
@@ -589,7 +589,7 @@ async function shareReferral() {
         if (navigator.share) {
             // For mobile devices with native share
             await navigator.share({
-                title: 'Join TronX',
+                title: 'Join Miles',
                 text: shareText,
                 url: `{{ url('/register') }}?ref=${referralCode}`
             });

@@ -29,10 +29,10 @@ class StakingController extends Controller
             $wallet = $user->wallet()->lockForUpdate()->firstOrFail();
 
             // Check if user has enough balance
-            if ($wallet->tronstake_balance < $request->amount) {
+            if ($wallet->miles_balance < $request->amount) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Insufficient StakeTRX balance'
+                    'message' => 'Insufficient MilesCoin balance'
                 ], 400);
             }
 
@@ -62,7 +62,7 @@ class StakingController extends Controller
             ]);
 
             // Deduct from wallet balance
-            $wallet->decrement('tronstake_balance', $request->amount);
+            $wallet->decrement('miles_balance', $request->amount);
 
             Log::info('Staking created successfully', [
                 'user_id' => $user->id,

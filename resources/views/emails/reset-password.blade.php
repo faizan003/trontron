@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Your TronX Password</title>
+    <title>Reset Your Miles Password</title>
     <style>
         /* Reset styles */
         * {
@@ -28,7 +28,7 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
         
-        /* Header with TronX branding */
+        /* Header with Miles branding */
         .header {
             background: linear-gradient(135deg, #2563eb 0%, #9333ea 100%);
             padding: 40px 30px;
@@ -237,7 +237,7 @@
         <div class="email-container">
             <!-- Header -->
             <div class="header">
-                <div class="logo">TronX</div>
+                <div class="logo">Miles</div>
                 <div class="header-subtitle">Secure Staking Platform</div>
             </div>
             
@@ -246,7 +246,7 @@
                 <div class="greeting">Hello {{ $user->name }}! 👋</div>
                 
                 <div class="message">
-                    We received a request to reset your TronX account password. If you made this request, click the button below to create a new password.
+                    We received a request to reset your Miles account password. If you made this request, click the button below to create a new password.
                 </div>
                 
                 <!-- Security Notice -->
@@ -287,18 +287,18 @@
             <!-- Footer -->
             <div class="footer">
                 <div class="footer-text">
-                    This email was sent by <strong>TronX</strong><br>
-                    Your trusted TRON staking platform
+                    This email was sent by <strong>Miles</strong><br>
+                    Your trusted staking platform
                 </div>
                 
                 <div class="footer-links">
                     <a href="{{ url('/') }}">Visit Website</a>
                     <a href="{{ url('/dashboard') }}">Dashboard</a>
-                    <a href="mailto:support@tronxearn.site">Support</a>
+                    <a href="mailto:support@milesplatform.com">Support</a>
                 </div>
                 
                 <div style="margin-top: 16px; color: #9ca3af; font-size: 12px;">
-                    © {{ date('Y') }} TronX. All rights reserved.
+                    © {{ date('Y') }} Miles. All rights reserved.
                 </div>
             </div>
         </div>

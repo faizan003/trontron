@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\ReferralEarning;
 use Carbon\Carbon;
 
-class StakeTrxController extends Controller
+class MilesCoinController extends Controller
 {
     const CONVERT_COOLDOWN_MINUTES = 15;
 
@@ -65,9 +65,13 @@ class StakeTrxController extends Controller
             // Note: We don't check balance here because the transaction has already been sent to blockchain
             // The frontend has already validated the balance before sending the transaction
 
+            // Calculate 1% conversion fee
+            $conversionFee = $amount * 0.01;
+            $milesAmount = $amount - $conversionFee;
+
             // Update user's wallet balance
             $wallet->balance -= $amount;
-            $wallet->tronstake_balance += $amount;
+            $wallet->miles_balance += $milesAmount; // User receives amount minus 1% fee
             $wallet->save();
 
             // Handle referral reward if user was referred
@@ -151,8 +155,12 @@ class StakeTrxController extends Controller
                 ]);
             }
 
+            // Calculate 1% conversion fee for referral earnings too
+            $conversionFee = $earnings * 0.01;
+            $milesAmount = $earnings - $conversionFee;
+
             // Update user's wallet balance
-            $user->wallet->tronstake_balance += $earnings;
+            $user->wallet->miles_balance += $milesAmount; // User receives amount minus 1% fee
             $user->wallet->save();
 
             // Reset referral earnings

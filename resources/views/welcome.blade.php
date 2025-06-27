@@ -14,11 +14,11 @@
                         Earn Up To 2.73% Daily
                     </span>
                     <span class="block text-3xl md:text-5xl mt-2">
-                        With TronX Staking
+                        With Miles Staking
                     </span>
                 </h1>
                 <p class="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-                    Join thousands of investors earning passive income through our secure TRON staking platform
+                    Join thousands of investors earning passive income through our secure staking platform
                 </p>
                 <div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
                     <a href="{{ route('register') }}"
@@ -142,11 +142,11 @@
                                     </svg>
                                 </div>
 
-                                <!-- Step 2: TronX Pool -->
+                                <!-- Step 2: Miles Pool -->
                                 <div class="flex flex-col items-center space-y-3">
                                     <div class="relative">
                                         <div class="w-28 h-18 sm:w-32 sm:h-20 rounded-xl shadow-lg transform rotate-x-12 flex items-center justify-center float-animation" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.39); animation-delay: 0.5s;">
-                                            <span class="text-white text-xs sm:text-sm font-bold">TronX Pool</span>
+                                            <span class="text-white text-xs sm:text-sm font-bold">Miles Pool</span>
                                         </div>
                                         <div class="absolute -bottom-1 -right-1 w-28 h-18 sm:w-32 sm:h-20 rounded-xl -z-10" style="background-color: rgba(91, 33, 182, 0.7);"></div>
                                     </div>
@@ -224,7 +224,7 @@
     <!-- Consolidated Features Section -->
     <div class="bg-gray-800 py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-white">Why Choose TronX</h2>
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-white">Why Choose Miles</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 <div class="bg-gray-700/50 rounded-2xl p-6 transform transition-all hover:-translate-y-1 hover:bg-gray-700/70">
                     <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-4">
@@ -289,27 +289,27 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Frequently Asked Questions</h2>
-                <p class="text-lg text-gray-300">Get answers to the most common questions about TronX staking</p>
+                <p class="text-lg text-gray-300">Get answers to the most common questions about Miles staking</p>
             </div>
 
             <div class="space-y-6">
                 <!-- FAQ Item 1 -->
                 <div class="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
                     <button class="flex items-center justify-between w-full text-left" onclick="toggleFAQ(1)">
-                        <h3 class="text-xl font-semibold text-white">How does TronX staking work?</h3>
+                        <h3 class="text-xl font-semibold text-white">How does Miles staking work?</h3>
                         <svg id="faq-icon-1" class="w-6 h-6 text-emerald-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </button>
                     <div id="faq-content-1" class="mt-4 text-gray-300 hidden">
-                        <p>TronX operates a crypto lending business model. When you stake TRX with us, your funds are pooled with other investors and lent to verified professional traders who need capital for trading activities. These traders pay premium interest rates due to our flexible repayment terms, and we share these profits with our stakers as daily returns of up to 2.73%.</p>
+                        <p>Miles operates a crypto lending business model. When you stake TRX with us, your funds are pooled with other investors and lent to verified professional traders who need capital for trading activities. These traders pay premium interest rates due to our flexible repayment terms, and we share these profits with our stakers as daily returns of up to 2.73%.</p>
                     </div>
                 </div>
 
                 <!-- FAQ Item 2 -->
                 <div class="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
                     <button class="flex items-center justify-between w-full text-left" onclick="toggleFAQ(2)">
-                        <h3 class="text-xl font-semibold text-white">How do I deposit TRX to TronXEarn?</h3>
+                        <h3 class="text-xl font-semibold text-white">How do I deposit TRX to Miles?</h3>
                         <svg id="faq-icon-2" class="w-6 h-6 text-emerald-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -317,7 +317,7 @@
                     <div id="faq-content-2" class="mt-4 text-gray-300 hidden">
                         <p><strong>Step-by-step deposit process:</strong></p>
                         <ol class="list-decimal list-inside mt-2 space-y-2">
-                            <li>Register and log into your TronXEarn account</li>
+                            <li>Register and log into your Miles account</li>
                             <li>Click the "Deposit" button in your dashboard</li>
                             <li>Copy your unique TRX/TRC20 deposit address</li>
                             <li>Go to your wallet (TronLink, Trust Wallet) or exchange (Binance, etc.)</li>
@@ -342,7 +342,7 @@
                     <div id="faq-content-3" class="mt-4 text-gray-300 hidden">
                         <p><strong>Minimum Deposit:</strong> 150 TRX - This allows you to start earning daily returns immediately.</p>
                         <p class="mt-2"><strong>Minimum Withdrawal:</strong> 10 TRX - You can withdraw your earnings daily with this low minimum, ensuring you have access to your profits without waiting for large amounts to accumulate.</p>
-                        <p class="mt-2 text-emerald-300">Our low minimums make TronX accessible to investors of all sizes, from beginners to large-scale investors.</p>
+                        <p class="mt-2 text-emerald-300">Our low minimums make Miles accessible to investors of all sizes, from beginners to large-scale investors.</p>
                     </div>
                 </div>
 
@@ -387,7 +387,7 @@
                 <!-- FAQ Item 6 -->
                 <div class="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
                     <button class="flex items-center justify-between w-full text-left" onclick="toggleFAQ(6)">
-                        <h3 class="text-xl font-semibold text-white">Is TronX safe and secure? What security measures do you have?</h3>
+                        <h3 class="text-xl font-semibold text-white">Is Miles safe and secure? What security measures do you have?</h3>
                         <svg id="faq-icon-6" class="w-6 h-6 text-emerald-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -415,7 +415,7 @@
                         </svg>
                     </button>
                     <div id="faq-content-7" class="mt-4 text-gray-300 hidden">
-                        <p>Earn <strong>5% commission</strong> on every person you refer to TronX!</p>
+                        <p>Earn <strong>5% commission</strong> on every person you refer to Miles!</p>
                         <p class="mt-2"><strong>How it works:</strong></p>
                         <ol class="list-decimal list-inside mt-2 space-y-1">
                             <li>Get your unique referral link from your dashboard</li>
@@ -457,7 +457,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Ready to Start Earning?</h2>
             <p class="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
-                Join thousands of investors already earning passive income with TronX
+                Join thousands of investors already earning passive income with Miles
             </p>
             <a href="{{ route('register') }}"
                 class="inline-block bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1">

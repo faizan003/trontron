@@ -15,7 +15,7 @@
                 <div>
                     <h3 class="text-sm font-medium text-gray-600">Available for Staking</h3>
                     <p class="text-2xl font-bold text-gray-900">
-                        {{ number_format(auth()->user()->wallet->tronstake_balance ?? 0, 6) }} StakeTRX
+                        {{ number_format(auth()->user()->wallet->miles_balance ?? 0, 6) }} MSC
                     </p>
                 </div>
             </div>
@@ -224,7 +224,7 @@ async function startStaking(planId) {
     try {
         const inputElement = document.getElementById(`stake-amount-${planId}`);
         const stakeAmount = parseFloat(inputElement.value);
-        const availableBalance = {{ auth()->user()->wallet->tronstake_balance ?? 0 }};
+                    const availableBalance = {{ auth()->user()->wallet->miles_balance ?? 0 }};
 
         // Validate input amount
         if (isNaN(stakeAmount) || stakeAmount <= 0) {
@@ -268,7 +268,7 @@ async function startStaking(planId) {
         if (stakeAmount > availableBalance) {
             setLoadingState(false);
             showConfirmation(
-                `Insufficient StakeTRX balance. Available: ${availableBalance} TRX\n\nWould you like to convert TRX to StakeTRX?`,
+                `Insufficient MilesCoin balance. Available: ${availableBalance} MSC\n\nWould you like to convert TRX to MilesCoin?`,
                 () => window.location.href = '{{ route("dashboard.convert") }}'
             );
             return;
