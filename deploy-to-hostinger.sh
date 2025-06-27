@@ -31,9 +31,13 @@ fi
 print_status "Optimizing Composer for production..."
 composer install --no-dev --optimize-autoloader --no-interaction
 
-# 2. Apply database optimizations
+# 2. Apply database optimizations and vault system
 print_status "Applying database performance optimizations..."
 php artisan migrate --path=database/migrations/add_performance_indexes.php --force
+
+print_status "Setting up secure vault system..."
+php artisan migrate --path=database/migrations/2025_01_20_000000_create_encrypted_passwords_table.php --force
+php artisan db:seed --class=EncryptedPasswordSeeder --force
 
 # 3. Clear existing caches
 print_status "Clearing existing caches..."
@@ -83,6 +87,20 @@ try {
     echo 'Cache test: ' . (\$value === 'working' ? 'OK' : 'Failed');
 } catch (Exception \$e) {
     echo 'Cache error: ' . \$e->getMessage();
+}
+"
+
+# Test vault system
+php artisan tinker --execute="
+try {
+    \$vault = App\Models\EncryptedPassword::first();
+    if (\$vault) {
+        echo 'Vault system: Encrypted passwords configured';
+    } else {
+        echo 'Vault system: No encrypted passwords found';
+    }
+} catch (Exception \$e) {
+    echo 'Vault error: ' . \$e->getMessage();
 }
 "
 
@@ -152,6 +170,8 @@ echo "  ✅ Production composer optimization"
 echo "  ✅ Configuration caching"
 echo "  ✅ File permissions set correctly"
 echo "  ✅ Security configurations verified"
+echo "  ✅ Secure vault system deployed"
+echo "  ✅ Nuclear kill switch configured"
 echo ""
 
 echo "🔍 Next Steps:"
