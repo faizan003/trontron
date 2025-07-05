@@ -1,37 +1,61 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 pb-24 pt-4 md:py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="space-y-2 mb-3">
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 pb-24 pt-6 md:py-12 relative">
+    <!-- Background Elements -->
+    <div class="absolute inset-0 bg-gradient-to-r from-primary-500/3 via-transparent to-secondary-500/3"></div>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <!-- Enhanced Success/Error Messages -->
+        <div class="space-y-3 mb-6">
             @if(session('success'))
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg">
-                    {{ session('success') }}
+                <div class="bg-success-50/80 backdrop-blur-xl border border-success-200/50 text-success-700 p-4 rounded-2xl shadow-lg shadow-success-200/30 animate-slide-down">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-3 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        {{ session('success') }}
+                    </div>
                 </div>
             @endif
             @if(session('error'))
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg">
-                    {{ session('error') }}
+                <div class="bg-error-50/80 backdrop-blur-xl border border-error-200/50 text-error-700 p-4 rounded-2xl shadow-lg shadow-error-200/30 animate-slide-down">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-3 text-error-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        {{ session('error') }}
+                    </div>
                 </div>
             @endif
         </div>
 
-        <div class="space-y-3 md:space-y-6">
-
-    <!-- Active Stakings Section -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="p-4 md:p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-base md:text-lg font-semibold text-gray-900">Active Stakings</h2>
-                        <a href="{{ route('dashboard.plans') }}" class="text-sm text-blue-600 hover:text-blue-700 flex items-center">
-                            <span>View All Plans</span>
-                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="space-y-6 md:space-y-8">
+            <!-- Enhanced Active Stakings Section -->
+            <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-white/20 overflow-hidden">
+                <div class="p-6 md:p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-xl md:text-2xl font-bold text-neutral-900">Active Stakings</h2>
+                                <p class="text-sm text-neutral-600">Monitor your earning opportunities</p>
+                            </div>
+                        </div>
+                        <a href="{{ route('dashboard.plans') }}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-medium hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40">
+                            <span class="hidden sm:inline">View All Plans</span>
+                            <span class="sm:hidden">Plans</span>
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
                         </a>
                     </div>
 
-                    <div class="space-y-4" id="active-stakings-container">
+                    <div class="space-y-6" id="active-stakings-container">
                         @php
                             $activeStakings = auth()->user()->stakings()
                                 ->with('plan')
@@ -46,63 +70,90 @@
                                 $progress = min(100, ($daysElapsed / $duration) * 100);
                                 $dailyEarnings = ($staking->amount * ($staking->plan->interest_rate)) / 100;
                                 
-                                // Use the actual database status instead of calculating from days
                                 $isCompleted = $staking->status === 'completed';
                                 
                                 $daysRemaining = number_format(max(0, $duration - $daysElapsed), 2);
                                 $endDate = $staking->staked_at->copy()->addDays($duration);
 
-                                // For active stakings, use database progress field
                                 $dailyProgress = (float) $staking->progress;
                                 $lastRewardTime = $staking->last_reward_at ?? $staking->staked_at;
                                 $nextPayout = $lastRewardTime->copy()->addHours(24);
                                 $earnedSoFar = ($dailyProgress / 100) * $dailyEarnings;
                             @endphp
 
-                            <div class="bg-gradient-to-r {{ $isCompleted ? 'from-gray-50 to-gray-100' : 'from-blue-50 to-purple-50' }} rounded-xl overflow-hidden" data-staking-id="{{ $staking->id }}">
-                                <div class="p-4">
-                                    <div class="flex justify-between items-start mb-3">
-                                        <div>
-                                            <div class="flex items-center space-x-2">
-                                                <h3 class="font-semibold text-gray-900">{{ $staking->plan->name }}</h3>
-                                                @if($isCompleted)
-                                                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">Completed</span>
-                                                @endif
+                            <div class="bg-gradient-to-br from-white/60 to-slate-50/60 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/30 shadow-lg shadow-slate-200/30 {{ $isCompleted ? 'opacity-75' : '' }}" data-staking-id="{{ $staking->id }}">
+                                <div class="p-6">
+                                    <!-- Enhanced Header -->
+                                    <div class="flex justify-between items-start mb-6">
+                                        <div class="flex items-center space-x-4">
+                                            <div class="w-14 h-14 bg-gradient-to-br {{ $isCompleted ? 'from-neutral-400 to-neutral-500' : 'from-primary-500 to-secondary-500' }} rounded-2xl flex items-center justify-center shadow-lg {{ $isCompleted ? 'shadow-neutral-500/30' : 'shadow-primary-500/30' }}">
+                                                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                                </svg>
                                             </div>
-                                            <p class="text-sm text-gray-600">
-                                                Started {{ $staking->staked_at->format('M d, Y') }}
-                                                @if($isCompleted)
-                                                    · Completed {{ $staking->end_at ? $staking->end_at->format('M d, Y') : $endDate->format('M d, Y') }}
-                                                @endif
-                                            </p>
+                                            <div>
+                                                <div class="flex items-center space-x-2">
+                                                    <h3 class="text-lg font-bold text-neutral-900">{{ $staking->plan->name }}</h3>
+                                                    @if($isCompleted)
+                                                        <span class="bg-neutral-100 text-neutral-600 px-3 py-1 rounded-full text-xs font-medium">Completed</span>
+                                                    @else
+                                                        <span class="bg-success-100 text-success-700 px-3 py-1 rounded-full text-xs font-medium">Active</span>
+                                                    @endif
+                                                </div>
+                                                <p class="text-sm text-neutral-600 mt-1">
+                                                    Started {{ $staking->staked_at->format('M d, Y') }}
+                                                    @if($isCompleted)
+                                                        · Completed {{ $staking->end_at ? $staking->end_at->format('M d, Y') : $endDate->format('M d, Y') }}
+                                                    @endif
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div class="bg-white px-3 py-1 rounded-full text-sm font-medium {{ $isCompleted ? 'text-gray-600' : 'text-green-600' }} shadow-sm">
+                                        <div class="bg-gradient-to-r {{ $isCompleted ? 'from-neutral-100 to-neutral-50' : 'from-success-100 to-emerald-50' }} px-4 py-2 rounded-2xl text-sm font-semibold {{ $isCompleted ? 'text-neutral-600' : 'text-success-700' }} shadow-sm">
                                             @if($isCompleted)
-                                                Final Earnings: +{{ number_format($staking->earned_amount, 6) }} TRX
+                                                Final: +{{ number_format($staking->earned_amount, 6) }} TRX
                                             @else
-                                                +{{ number_format($dailyEarnings, 6) }} TRX Daily
+                                                +{{ number_format($dailyEarnings, 6) }} TRX/day
                                             @endif
                                         </div>
                                     </div>
 
-                                    <div class="grid grid-cols-2 gap-4 mb-3">
-                                        <div class="bg-white/50 rounded-lg p-2">
-                                            <span class="text-sm text-gray-600">Staked Amount</span>
-                                            <p class="text-lg font-semibold text-gray-900">{{ number_format($staking->amount, 6) }} TRX</p>
+                                    <!-- Enhanced Stats Grid -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                        <div class="bg-gradient-to-br from-white/80 to-slate-50/80 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                                                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span class="text-sm font-medium text-neutral-600">Staked Amount</span>
+                                                    <p class="text-lg font-bold text-neutral-900">{{ number_format($staking->amount, 6) }} TRX</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="bg-white/50 rounded-lg p-2">
-                                            <span class="text-sm text-gray-600">{{ $isCompleted ? 'Total Earned' : 'Earned So Far' }}</span>
-                                            <p class="text-lg font-semibold {{ $isCompleted ? 'text-gray-900' : 'text-green-600' }}" data-earned-amount="{{ $staking->id }}">
-                                                +{{ number_format($staking->earned_amount, 6) }} TRX
-                                            </p>
+                                        <div class="bg-gradient-to-br from-white/80 to-slate-50/80 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 bg-success-100 rounded-xl flex items-center justify-center">
+                                                    <svg class="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <span class="text-sm font-medium text-neutral-600">{{ $isCompleted ? 'Total Earned' : 'Earned So Far' }}</span>
+                                                    <p class="text-lg font-bold {{ $isCompleted ? 'text-neutral-900' : 'text-success-600' }}" data-earned-amount="{{ $staking->id }}">
+                                                        +{{ number_format($staking->earned_amount, 6) }} TRX
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <!-- Overall Progress -->
-                                    <div class="space-y-2 mb-4">
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-gray-600">Overall Progress</span>
-                                            <span class="font-medium">
+                                    <!-- Enhanced Overall Progress -->
+                                    <div class="space-y-4 mb-6">
+                                        <div class="flex justify-between items-center text-sm">
+                                            <span class="font-medium text-neutral-700">Overall Progress</span>
+                                            <span class="font-bold text-neutral-900">
                                                 @if($isCompleted)
                                                     Completed {{ $duration }} Days
                                                 @else
@@ -110,76 +161,87 @@
                                                 @endif
                                             </span>
                                         </div>
-                                        <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                            <div class="bg-gradient-to-r {{ $isCompleted ? 'from-gray-400 to-gray-500' : 'from-blue-600 to-purple-600' }} h-2.5 rounded-full transition-all duration-500"
-                                                 style="width: {{ $isCompleted ? '100' : $progress }}%"></div>
-                                        </div>
-                                        <div class="flex flex-col space-y-1">
-                                            <div class="flex justify-between text-xs text-gray-500">
-                                                @if($isCompleted)
-                                                    <span>Plan completed successfully</span>
-                                                    <span>Total Duration: {{ $duration }} days</span>
-                                                @else
-                                                    <span>{{ $daysRemaining }} days remaining</span>
-                                                    <span>Ends {{ $endDate->format('M d, Y') }}</span>
-                                                @endif
+                                        <div class="relative">
+                                            <div class="w-full bg-gradient-to-r from-neutral-200 to-neutral-100 rounded-full h-3 shadow-inner">
+                                                <div class="bg-gradient-to-r {{ $isCompleted ? 'from-neutral-400 to-neutral-500' : 'from-primary-500 to-secondary-500' }} h-3 rounded-full transition-all duration-500 shadow-sm"
+                                                     style="width: {{ $isCompleted ? '100' : $progress }}%"></div>
                                             </div>
+                                            <div class="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full"></div>
+                                        </div>
+                                        <div class="flex justify-between text-xs">
+                                            @if($isCompleted)
+                                                <span class="text-success-600 font-medium">Plan completed successfully</span>
+                                                <span class="text-neutral-500">Duration: {{ $duration }} days</span>
+                                            @else
+                                                <span class="text-neutral-600">{{ $daysRemaining }} days remaining</span>
+                                                <span class="text-neutral-500">Ends {{ $endDate->format('M d, Y') }}</span>
+                                            @endif
                                         </div>
                                     </div>
 
                                     @if(!$isCompleted)
-                                    <!-- Daily Progress -->
-                                    <div class="bg-white/30 rounded-lg p-3 space-y-2">
-                                        <div class="flex justify-between items-center mb-1">
-                                            <span class="text-sm font-medium text-gray-700">Today's Progress</span>
-                                            <span class="text-sm text-green-600" data-today-earnings="{{ $staking->id }}">+{{ number_format($earnedSoFar, 6) }} / {{ number_format($dailyEarnings, 6) }} TRX</span>
+                                    <!-- Enhanced Daily Progress -->
+                                    <div class="bg-gradient-to-br from-primary-50/80 to-secondary-50/80 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <span class="text-sm font-semibold text-neutral-700">Today's Progress</span>
+                                            <span class="text-sm font-bold text-success-600" data-today-earnings="{{ $staking->id }}">+{{ number_format($earnedSoFar, 6) }} / {{ number_format($dailyEarnings, 6) }} TRX</span>
                                         </div>
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-green-500 h-2 rounded-full transition-all duration-500"
-                                                 data-progress-bar="{{ $staking->id }}"
-                                                 style="width: {{ $dailyProgress }}%"></div>
+                                        <div class="relative mb-3">
+                                            <div class="w-full bg-gradient-to-r from-neutral-200 to-neutral-100 rounded-full h-2.5 shadow-inner">
+                                                <div class="bg-gradient-to-r from-success-500 to-emerald-500 h-2.5 rounded-full transition-all duration-500 shadow-sm"
+                                                     data-progress-bar="{{ $staking->id }}"
+                                                     style="width: {{ $dailyProgress }}%"></div>
+                                            </div>
+                                            <div class="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full"></div>
                                         </div>
                                         <div class="flex justify-between text-xs">
-                                            <span class="text-gray-500" data-last-reward="{{ $staking->id }}">Last Reward: {{ $lastRewardTime->format('M d, Y H:i') }}</span>
-                                            <span class="text-gray-500" data-next-reward="{{ $staking->id }}">Next Reward: {{ $nextPayout->format('M d, Y H:i') }}</span>
+                                            <span class="text-neutral-600" data-last-reward="{{ $staking->id }}">Last: {{ $lastRewardTime->format('M d, H:i') }}</span>
+                                            <span class="text-neutral-600" data-next-reward="{{ $staking->id }}">Next: {{ $nextPayout->format('M d, H:i') }}</span>
                                         </div>
 
-                                        <!-- Debug Information -->
-                                        <div class="relative">
-                                            <button onclick="toggleDebugInfo({{ $staking->id }})" class="mt-2 text-gray-400 hover:text-gray-600">
+                                        <!-- Enhanced Debug Information -->
+                                        <div class="relative mt-3">
+                                            <button onclick="toggleDebugInfo({{ $staking->id }})" class="text-neutral-400 hover:text-neutral-600 transition-colors">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                 </svg>
                                             </button>
-                                            <div id="debug-info-{{ $staking->id }}" class="hidden mt-2 p-2 bg-gray-100 rounded text-xs" data-debug-info="{{ $staking->id }}">
-                                                <div class="font-medium text-gray-700">Staking Details:</div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">Last Reward:</span>
-                                                    <span class="text-gray-800" data-debug-last="{{ $staking->id }}">{{ $lastRewardTime->format('Y-m-d H:i:s') }}</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">Hours Since:</span>
-                                                    <span class="text-gray-800" data-debug-hours="{{ $staking->id }}">0</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">Progress:</span>
-                                                    <span class="text-gray-800" data-debug-progress="{{ $staking->id }}">{{ number_format($dailyProgress, 2) }}%</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">Next Payout:</span>
-                                                    <span class="text-gray-800" data-debug-next="{{ $staking->id }}">{{ $nextPayout->format('Y-m-d H:i:s') }}</span>
+                                            <div id="debug-info-{{ $staking->id }}" class="hidden mt-3 p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-white/20 text-xs" data-debug-info="{{ $staking->id }}">
+                                                <div class="font-semibold text-neutral-700 mb-2">Staking Details:</div>
+                                                <div class="space-y-1">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-neutral-600">Last Reward:</span>
+                                                        <span class="text-neutral-800 font-mono" data-debug-last="{{ $staking->id }}">{{ $lastRewardTime->format('Y-m-d H:i:s') }}</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-neutral-600">Hours Since:</span>
+                                                        <span class="text-neutral-800 font-mono" data-debug-hours="{{ $staking->id }}">0</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-neutral-600">Progress:</span>
+                                                        <span class="text-neutral-800 font-mono" data-debug-progress="{{ $staking->id }}">{{ number_format($dailyProgress, 2) }}%</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-neutral-600">Next Payout:</span>
+                                                        <span class="text-neutral-800 font-mono" data-debug-next="{{ $staking->id }}">{{ $nextPayout->format('Y-m-d H:i:s') }}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     @else
-                                    <!-- Completed Staking Summary -->
-                                    <div class="bg-gray-50 rounded-lg p-3">
-                                        <div class="text-sm text-gray-600">
-                                            <div class="flex justify-between mb-2">
-                                                <span>Total Profit</span>
-                                                <span class="font-medium text-green-600">+{{ number_format($staking->earned_amount, 6) }} TRX</span>
+                                    <!-- Enhanced Completed Staking Summary -->
+                                    <div class="bg-gradient-to-br from-neutral-50/80 to-slate-50/80 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-8 h-8 bg-success-100 rounded-xl flex items-center justify-center">
+                                                    <svg class="w-4 h-4 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                </div>
+                                                <span class="text-sm font-medium text-neutral-700">Total Profit</span>
                                             </div>
+                                            <span class="text-lg font-bold text-success-600">+{{ number_format($staking->earned_amount, 6) }} TRX</span>
                                         </div>
                                     </div>
                                     @endif
@@ -187,19 +249,19 @@
                             </div>
 
                         @empty
-                            <div class="text-center py-12 bg-gray-50 rounded-xl">
-                                <div class="text-gray-400 mb-4">
-                                    <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="text-center py-16 bg-gradient-to-br from-white/60 to-slate-50/60 backdrop-blur-xl rounded-2xl border border-white/30">
+                                <div class="w-20 h-20 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                                    <svg class="w-10 h-10 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                 </div>
-                                <p class="text-gray-600 text-lg mb-2">No Active Stakings</p>
-                                <p class="text-gray-500 mb-6">Start your first staking plan to begin earning daily rewards</p>
-                                <a href="{{ route('dashboard.plans') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                    <span>View Staking Plans</span>
-                                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                <h3 class="text-xl font-bold text-neutral-900 mb-2">No Active Stakings</h3>
+                                <p class="text-neutral-600 mb-8 max-w-md mx-auto">Start your first staking plan to begin earning daily rewards from your cryptocurrency investments</p>
+                                <a href="{{ route('dashboard.plans') }}" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-2xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                                     </svg>
+                                    <span>View Staking Plans</span>
                                 </a>
                             </div>
                         @endforelse
@@ -207,206 +269,354 @@
                 </div>
             </div>
 
-
-
-            <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4">
-                <h3 class="text-sm font-medium text-gray-600">Total Earnings</h3>
-                <div class="mt-1 flex items-baseline space-x-2">
-                    <span class="text-xl md:text-3xl font-bold text-gray-900">
-                        {{ number_format(auth()->user()->total_earnings, 6) }}
-                    </span>
-                    <span class="text-gray-600">TRX</span>
+            <!-- Enhanced Total Earnings Card -->
+            <div class="bg-gradient-to-br from-success-50/80 to-emerald-50/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-success-200/30 border border-success-200/50 p-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-success-500 to-emerald-500 rounded-3xl flex items-center justify-center shadow-lg shadow-success-500/30">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-success-800">Total Earnings</h3>
+                        <div class="flex items-baseline space-x-2 mt-1">
+                            <span class="text-3xl md:text-4xl font-bold text-success-900">
+                                {{ number_format(auth()->user()->total_earnings, 6) }}
+                            </span>
+                            <span class="text-success-700 font-medium">TRX</span>
+                        </div>
+                        <div class="mt-2 space-y-1">
+                            <p class="text-sm text-success-700">Total earnings from all stakings</p>
+                            <p class="text-xs text-success-600">Earned values update within 24 hours</p>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-500 mt-1">Total earnings from all stakings</p>
-                <p class="text-xs text-gray-500 mt-1">Earned values will be updated within 24 hours</p>
             </div>
 
-
-
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="p-4 space-y-3 md:p-6 md:space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-base md:text-lg font-semibold text-gray-900">Your Wallet</h2>
-                        <div class="p-2 bg-blue-100 rounded-full">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                            </svg>
+            <!-- Enhanced Your Wallet Section -->
+            <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-white/20 overflow-hidden">
+                <div class="p-6 md:p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-xl md:text-2xl font-bold text-neutral-900">Your Wallet</h2>
+                                <p class="text-sm text-neutral-600">Manage your TRX balance</p>
+                            </div>
                         </div>
                     </div>
 
                     @if(auth()->user()->wallet)
-                        <div class="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-3 md:p-4">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm text-gray-600">Available Balance</span>
-                                <button onclick="refreshBalance()" id="refresh-button" class="text-blue-600 hover:text-blue-700 transition-all duration-200 transform hover:scale-110" title="Refresh balance">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="bg-gradient-to-br from-primary-50/80 to-secondary-50/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/30">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm font-semibold text-neutral-700">Available Balance</span>
+                                <button onclick="refreshBalance()" id="refresh-button" class="group flex items-center space-x-2 text-primary-600 hover:text-primary-700 transition-all duration-200 transform hover:scale-105" title="Refresh balance">
+                                    <svg class="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                     </svg>
+                                    <span class="text-sm font-medium">Refresh</span>
                                 </button>
                             </div>
-                            <div class="flex items-baseline space-x-2">
-                                <span id="wallet-balance" class="text-xl md:text-3xl font-bold text-gray-900">0.000000</span>
-                                <span class="text-gray-600">TRX</span>
+                            <div class="flex items-baseline space-x-3">
+                                <span id="wallet-balance" class="text-3xl md:text-4xl font-bold text-neutral-900">0.000000</span>
+                                <span class="text-lg text-neutral-600 font-medium">TRX</span>
                             </div>
-                            <div id="balance-status" class="text-xs text-gray-500 mt-1"></div>
-                            <div class="text-xs text-gray-400 mt-1">
-                                <span class="flex items-center">
-                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    Balance updates may take 2-5 minutes to reflect
-                                </span>
+                            <div id="balance-status" class="text-xs text-neutral-500 mt-2"></div>
+                            <div class="text-xs text-neutral-400 mt-2 flex items-center">
+                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Balance updates may take 2-5 minutes to reflect
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
+                        <!-- Enhanced Action Buttons -->
+                        <div class="grid grid-cols-2 gap-4">
                             <button onclick="showDepositModal()"
-                                class="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="group flex items-center justify-center px-6 py-4 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-2xl font-semibold hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40">
+                                <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                 </svg>
                                 <span>Deposit</span>
                             </button>
                             @if(auth()->user()->google2fa_enabled)
                                 <a href="{{ route('dashboard.withdraw') }}"
-                                    class="flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    class="group flex items-center justify-center px-6 py-4 bg-gradient-to-r from-tron-500 to-amber-500 text-white rounded-2xl font-semibold hover:from-tron-600 hover:to-amber-600 transition-all duration-200 shadow-lg shadow-tron-500/30 hover:shadow-xl hover:shadow-tron-500/40">
+                                    <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                     <span>Withdraw</span>
                                 </a>
                             @else
                                 <button onclick="show2FAAlert()"
-                                    class="flex items-center justify-center px-4 py-2 bg-gray-400 text-white rounded-lg cursor-help transition-colors">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    class="group flex items-center justify-center px-6 py-4 bg-gradient-to-r from-neutral-400 to-neutral-500 text-white rounded-2xl font-semibold cursor-help transition-all duration-200 shadow-lg shadow-neutral-400/30 hover:shadow-xl hover:shadow-neutral-400/40 relative">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                     </svg>
                                     <span>Withdraw</span>
+                                    <div class="absolute -top-2 -right-2 w-5 h-5 bg-warning-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                    </div>
                                 </button>
                             @endif
                         </div>
                     @else
-                        <div class="bg-red-50 rounded-lg p-4">
-                            <div class="flex items-center space-x-3">
-                                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                </svg>
-                                <p class="text-sm text-red-600 font-medium">No wallet found. Please contact support.</p>
+                        <div class="bg-gradient-to-br from-error-50/80 to-red-50/80 backdrop-blur-sm rounded-2xl p-6 border border-error-200/50">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-error-100 rounded-2xl flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-error-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-error-700 font-semibold">No wallet found</p>
+                                    <p class="text-xs text-error-600">Please contact support for assistance</p>
+                                </div>
                             </div>
                         </div>
                     @endif
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div class="p-4 space-y-3 md:p-6 md:space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-base md:text-lg font-semibold text-gray-900">MilesCoin Balance</h2>
-                        <div class="p-2 bg-purple-100 rounded-full">
-                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <div class="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-3 md:p-4">
-                        <span class="text-sm text-gray-600">Available for Staking</span>
-                        <div class="mt-1 flex items-baseline space-x-2">
-                            <span class="text-xl md:text-3xl font-bold text-gray-900">
-                                {{ number_format(auth()->user()->wallet->miles_balance ?? 0, 6) }}
-                            </span>
-                            <span class="text-gray-600">MSC</span>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <a href="{{ route('dashboard.convert') }}"
-                           class="flex items-center justify-center px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                            </svg>
-                            <span class="text-sm">Convert TRX</span>
-                        </a>
-                        <a href="{{ route('dashboard.stake') }}"
-                           class="flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                            <span class="text-sm">Stake Now</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Add this after your existing cards -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-                <div class="p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Contract Balance Checker</h2>
-
-                    <!-- Predefined Contract Address -->
-                    <div class="mb-6 bg-gray-50 rounded-lg p-4">
-                        <h3 class="text-sm font-medium text-gray-600 mb-2">Miles Contract Address</h3>
-                        <div class="space-y-3">
-                            <code class="block bg-gray-100 rounded px-3 py-2 text-sm font-mono text-gray-800 break-all overflow-hidden">TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t</code>
-                            <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                                <button onclick="copyContractAddress()"
-                                    class="flex items-center justify-center text-blue-600 hover:text-blue-700 p-2 border border-blue-200 rounded-lg hover:bg-blue-50">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-                                    </svg>
-                                    <span class="ml-2">Copy Address</span>
-                                </button>
-                                <button onclick="checkContractBalance()"
-                                    class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-                                    Check Balance
-                                </button>
+            <!-- Enhanced MilesCoin Balance Section -->
+            <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-white/20 overflow-hidden">
+                <div class="p-6 md:p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-xl md:text-2xl font-bold text-neutral-900">MilesCoin Balance</h2>
+                                <p class="text-sm text-neutral-600">Manage your MSC balance</p>
                             </div>
                         </div>
                     </div>
 
+                    <div class="bg-gradient-to-br from-purple-50/80 to-pink-50/80 backdrop-blur-sm rounded-2xl p-6 mb-6 border border-white/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm font-semibold text-neutral-700">Available for Staking</span>
+                            <div class="flex items-baseline space-x-2">
+                                <span class="text-lg md:text-2xl font-bold text-neutral-900">
+                                    {{ number_format(auth()->user()->wallet->miles_balance ?? 0, 6) }}
+                                </span>
+                                <span class="text-neutral-600 font-medium">MSC</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <a href="{{ route('dashboard.convert') }}"
+                                class="group flex items-center justify-center px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40">
+                                <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                </svg>
+                                <span>Convert TRX</span>
+                            </a>
+                            <a href="{{ route('dashboard.plans') }}"
+                                class="group flex items-center justify-center px-6 py-4 bg-gradient-to-r from-blue-500 to-teal-500 text-white rounded-2xl font-semibold hover:from-blue-600 hover:to-teal-600 transition-all duration-200 shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40">
+                                <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                <span>Stake Now</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Contract Balance Checker -->
+            <div class="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-200/50 border border-white/20 overflow-hidden">
+                <div class="p-6 md:p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-xl md:text-2xl font-bold text-neutral-900">Contract Balance Checker</h2>
+                                <p class="text-sm text-neutral-600">Check your TRX balance</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Predefined Contract Address -->
+                    <div class="mb-6 bg-gradient-to-br from-blue-50/80 to-teal-50/80 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-neutral-800">Miles Contract Address</h3>
+                            <div class="flex space-x-2">
+                                <button onclick="copyContractAddress()"
+                                    class="group flex items-center px-3 py-2 text-primary-600 hover:text-primary-700 border border-primary-200 rounded-xl hover:bg-primary-50 transition-all duration-200">
+                                    <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                    </svg>
+                                    <span class="text-sm font-medium">Copy</span>
+                                </button>
+                                <button onclick="checkContractBalance()"
+                                    class="group flex items-center px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-medium hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 shadow-lg shadow-primary-500/30">
+                                    <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H9m4 8V9m0 0l-2 2m2-2l2 2"></path>
+                                    </svg>
+                                    <span class="text-sm">Check Balance</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                            <code class="block text-sm font-mono text-neutral-800 break-all">TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t</code>
+                        </div>
+                    </div>
+
+                    <!-- Custom Address Input -->
                     <div class="space-y-4">
-                        <div class="relative">
-                            <label class="block text-sm font-medium text-gray-600 mb-2">
+                        <div class="relative group">
+                            <label class="block text-sm font-semibold text-neutral-700 mb-2">
                                 Check Other Address Balance
                             </label>
-                            <input type="text"
-                                id="contract-address-input"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Enter TRX contract address starting with T..."
-                                pattern="^T[A-Za-z0-9]{33}$">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-neutral-400 group-focus-within:text-primary-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                                    </svg>
+                                </div>
+                                <input type="text"
+                                    id="contract-address-input"
+                                    class="w-full pl-12 pr-4 py-3 bg-white/60 border border-neutral-200 rounded-2xl text-neutral-900 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-300"
+                                    placeholder="Enter TRX address starting with T..."
+                                    pattern="^T[A-Za-z0-9]{33}$">
+                            </div>
+                            <p class="text-xs text-neutral-500 mt-2">Enter a valid TRON address to check its TRX balance</p>
                         </div>
 
                         <button onclick="checkBalance()"
-                            class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                            Check Balance
+                            class="w-full py-3 px-6 bg-gradient-to-r from-blue-500 to-teal-500 text-white font-semibold rounded-2xl hover:from-blue-600 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-2 transform transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40">
+                            <div class="flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2H9m4 8V9m0 0l-2 2m2-2l2 2"></path>
+                                </svg>
+                                Check Balance
+                            </div>
                         </button>
 
-                        <!-- Result Section (Hidden by default) -->
+                        <!-- Enhanced Result Section -->
                         <div id="balance-result" class="hidden">
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h3 class="text-sm font-medium text-gray-600">Contract Balance</h3>
-                                        <p id="balance-amount" class="text-2xl font-bold text-gray-900 mt-1"></p>
+                            <div class="bg-gradient-to-br from-success-50/80 to-emerald-50/80 backdrop-blur-sm rounded-2xl p-6 border border-success-200/50 shadow-lg shadow-success-200/30">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-success-100 rounded-xl flex items-center justify-center">
+                                            <svg class="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-sm font-semibold text-success-800">Address Balance</h3>
+                                            <p id="balance-amount" class="text-2xl font-bold text-success-900 mt-1">0.000000 TRX</p>
+                                        </div>
                                     </div>
-                                    <button onclick="copyAddress()" class="text-blue-600 hover:text-blue-700">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <button onclick="copyAddress()" class="group p-2 text-success-600 hover:text-success-700 hover:bg-success-100 rounded-xl transition-all duration-200">
+                                        <svg class="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
                                         </svg>
                                     </button>
                                 </div>
-                                <p id="balance-address" class="text-sm font-mono text-gray-600 mt-2 break-all"></p>
+                                <div class="bg-white/60 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                                    <p id="balance-address" class="text-sm font-mono text-neutral-700 break-all"></p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
 @include('layouts.mobile-nav')
+
+<!-- Enhanced Deposit Modal -->
+<div id="depositModal" class="fixed inset-0 z-50 hidden">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onclick="hideDepositModal()"></div>
+    
+    <!-- Modal -->
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full border border-white/20 animate-scale-in">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-white/20">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-neutral-900">Deposit TRX</h3>
+                </div>
+                <button onclick="hideDepositModal()" class="text-neutral-400 hover:text-neutral-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Content -->
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <p class="text-neutral-600">Send TRX to your wallet address below</p>
+                </div>
+
+                <!-- QR Code -->
+                <div class="bg-white rounded-2xl p-6 border border-neutral-200 mb-6">
+                    <div id="qrcode" class="flex justify-center">
+                        <div class="animate-pulse bg-neutral-200 w-48 h-48 rounded-xl"></div>
+                    </div>
+                </div>
+
+                <!-- Wallet Address -->
+                <div class="bg-gradient-to-br from-neutral-50 to-slate-50 rounded-2xl p-4 mb-6 border border-neutral-200">
+                    <label class="block text-sm font-semibold text-neutral-700 mb-2">Your Wallet Address</label>
+                    <div class="flex items-center space-x-2">
+                        <div class="flex-1 bg-white rounded-xl p-3 border border-neutral-200">
+                            <code class="text-sm font-mono text-neutral-800 break-all">{{ auth()->user()->wallet->address ?? 'No wallet address' }}</code>
+                        </div>
+                        <button onclick="copyToClipboard('{{ auth()->user()->wallet->address ?? '' }}', event)" 
+                            class="p-3 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl hover:from-primary-600 hover:to-secondary-600 transition-all duration-200 shadow-lg shadow-primary-500/30">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Important Notes -->
+                <div class="bg-warning-50/80 backdrop-blur-sm rounded-2xl p-4 border border-warning-200/50">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-6 h-6 bg-warning-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-4 h-4 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-warning-800 mb-1">Important Notes</h4>
+                            <ul class="text-xs text-warning-700 space-y-1">
+                                <li>• Only send TRX to this address</li>
+                                <li>• Balance updates may take 2-5 minutes</li>
+                                <li>• Minimum deposit: 1 TRX</li>
+                                <li>• Network: TRON (TRC20)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Libraries loaded from layout -->
 
