@@ -1,330 +1,165 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="min-h-screen pb-20 md:pb-8">
-    <!-- Hero Section with Glassmorphism -->
-    <div class="relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"></div>
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center mb-8">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                    Welcome back, {{ auth()->user()->name }}!
-                </h1>
-                <p class="text-gray-600 text-lg">Manage your staking and track your earnings</p>
-            </div>
-
+<div class="min-h-screen py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl shadow-xl p-8">
             @if(session('success'))
-                <div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-2xl shadow-sm">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        {{ session('success') }}
-                    </div>
+                <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
+                    {{ session('success') }}
                 </div>
             @endif
             @if(session('error'))
-                <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl shadow-sm">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        {{ session('error') }}
-                    </div>
+                <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+                    {{ session('error') }}
                 </div>
             @endif
-        </div>
-    </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <!-- Quick Stats Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Total Staked Card -->
-            <div class="group relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                <div class="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-sm font-medium text-gray-600 mb-1">Total Staked</div>
-                            <div class="text-2xl font-bold text-gray-900">
-                                @php
-                                    $totalStaked = auth()->user()->stakings ?
-                                        auth()->user()->stakings->where('status', 'active')->sum('amount') : 0;
-                                @endphp
-                                {{ number_format($totalStaked, 2) }}
-                            </div>
-                            <div class="text-xs text-gray-500">TRX</div>
-                        </div>
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Earned Card -->
-            <div class="group relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                <div class="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-sm font-medium text-gray-600 mb-1">Total Earned</div>
-                            <div class="text-2xl font-bold text-gray-900">
-                                @php
-                                    $totalEarned = auth()->user()->stakings ?
-                                        auth()->user()->stakings->sum('earned_amount') : 0;
-                                @endphp
-                                {{ number_format($totalEarned, 2) }}
-                            </div>
-                            <div class="text-xs text-gray-500">TRX</div>
-                        </div>
-                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- APY Card -->
-            <div class="group relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                <div class="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-sm font-medium text-gray-600 mb-1">Current APY</div>
-                            <div class="text-2xl font-bold text-gray-900">2.73%</div>
-                            <div class="text-xs text-gray-500">Daily</div>
-                        </div>
-                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MilesCoin Balance Card -->
-            <div class="group relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                <div class="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <div class="text-sm font-medium text-gray-600 mb-1">MilesCoin</div>
-                            <div class="text-2xl font-bold text-gray-900">
-                                {{ number_format(auth()->user()->wallet->miles_balance ?? 0, 2) }}
-                            </div>
-                            <div class="text-xs text-gray-500">MSC</div>
-                        </div>
-                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Wallet Information Card -->
-            <div class="group relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl blur opacity-10 group-hover:opacity-20 transition-opacity"></div>
-                <div class="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-xl">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">Your Wallet</h2>
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                            </svg>
-                        </div>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Wallet Information -->
+                <div class="bg-gradient-to-br from-blue-50 to-red-50 rounded-xl p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Wallet</h2>
 
                     @if(auth()->user()->wallet)
-                        <div class="space-y-6">
-                            <!-- Wallet Address -->
-                            <div class="bg-gray-50/50 rounded-2xl p-4">
-                                <label class="text-sm font-medium text-gray-700 mb-2 block">Wallet Address</label>
-                                <div class="flex items-center space-x-3">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm text-gray-600">Wallet Address</label>
+                                <div class="flex items-center space-x-2">
                                     <input type="text" value="{{ auth()->user()->wallet->address }}"
-                                        class="flex-1 bg-white/70 rounded-xl px-4 py-3 text-gray-800 text-sm font-mono border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" readonly>
+                                        class="w-full bg-white/50 rounded-lg px-4 py-2 text-gray-700" readonly>
                                     <button onclick="copyToClipboard('{{ auth()->user()->wallet->address }}')"
-                                        class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-xl transition-colors shadow-lg hover:shadow-xl">
+                                        class="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
                                         </svg>
                                     </button>
                                 </div>
-                                <a href="https://nile.tronscan.org/#/address/{{ auth()->user()->wallet->address }}"
-                                   target="_blank"
-                                   class="inline-flex items-center mt-2 text-sm text-blue-600 hover:text-blue-700 transition-colors">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                    </svg>
-                                    View on TronScan
-                                </a>
+                                <div class="mt-2 text-sm text-gray-600">
+                                    <a href="https://nile.tronscan.org/#/address/{{ auth()->user()->wallet->address }}"
+                                       target="_blank"
+                                       class="text-blue-600 hover:text-blue-700">
+                                        View on TronScan
+                                    </a>
+                                </div>
                             </div>
 
-                            <!-- Balance Display -->
-                            <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4">
-                                <label class="text-sm font-medium text-gray-700 mb-2 block">Available Balance</label>
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <div class="flex items-center space-x-2">
-                                            <span id="wallet-balance" class="text-3xl font-bold text-gray-900">Loading...</span>
-                                            <span class="text-lg text-gray-600">TRX</span>
-                                        </div>
-                                        <div id="usd-balance" class="text-sm text-gray-500 mt-1">≈ $0.00 USD</div>
-                                    </div>
+                            <div>
+                                <label class="text-sm text-gray-600">Available Balance</label>
+                                <div class="flex items-center space-x-2 bg-white/50 rounded-lg px-4 py-2">
+                                    <span id="wallet-balance" class="text-2xl font-bold text-gray-800">Loading...</span>
+                                    <span class="text-gray-600">TRX</span>
                                     <button onclick="refreshBalance()"
-                                        class="bg-green-500 hover:bg-green-600 text-white p-3 rounded-xl transition-colors shadow-lg hover:shadow-xl">
+                                        class="ml-2 text-blue-600 hover:text-blue-700 transition-colors">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                         </svg>
                                     </button>
                                 </div>
-                                <a href="https://nile.tronscan.org/#/wallet/contract"
-                                   target="_blank"
-                                   class="inline-flex items-center mt-3 text-sm text-green-600 hover:text-green-700 transition-colors">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                    </svg>
-                                    Get Test TRX
-                                </a>
+                                <div id="usd-balance" class="text-sm text-gray-600 mt-1">≈ $0.00 USD</div>
+                                <div class="mt-2 text-sm text-gray-600">
+                                    <a href="https://nile.tronscan.org/#/wallet/contract"
+                                       target="_blank"
+                                       class="text-blue-600 hover:text-blue-700">
+                                        Get Test TRX
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     @else
-                        <div class="text-center py-8">
-                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <p class="text-red-600 font-medium">No wallet found. Please contact support.</p>
-                        </div>
+                        <p class="text-red-600">No wallet found. Please contact support.</p>
                     @endif
                 </div>
-            </div>
 
-            <!-- Staking Actions Card -->
-            <div class="group relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur opacity-10 group-hover:opacity-20 transition-opacity"></div>
-                <div class="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-xl">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">Staking Actions</h2>
-                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                    </div>
-
-                    <!-- Convert TRX to MilesCoin -->
-                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 mb-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Convert TRX to MilesCoin</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label for="convert-amount" class="block text-sm font-medium text-gray-700 mb-2">Amount to Convert</label>
-                                <div class="flex items-center space-x-3">
-                                    <input type="number" id="convert-amount"
-                                        class="flex-1 bg-white/70 rounded-xl px-4 py-3 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                                        step="0.000001" min="1" placeholder="Enter TRX amount">
-                                    <button onclick="checkAndConvert()"
-                                        class="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium">
-                                        Convert
-                                    </button>
-                                </div>
+                <!-- Staking Information -->
+                <div class="bg-gradient-to-br from-red-50 to-blue-50 rounded-xl p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Staking Overview</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm text-gray-600">Total Staked</label>
+                            <div class="text-2xl font-bold text-gray-800">
+                                @php
+                                    $totalStaked = auth()->user()->stakings ?
+                                        auth()->user()->stakings->where('status', 'active')->sum('amount') : 0;
+                                @endphp
+                                {{ number_format($totalStaked, 6) }} TRX
                             </div>
-                            <div id="conversion-status" class="text-sm"></div>
                         </div>
-                    </div>
-
-                    <!-- Stake TRX -->
-                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Stake TRX</h3>
-                        <form action="{{ route('stake') }}" method="POST" class="space-y-4">
-                            @csrf
-                            <div>
-                                <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">Amount to Stake</label>
-                                <div class="flex items-center space-x-3">
-                                    <input type="number" id="amount" name="amount" step="0.000001" min="1"
-                                        class="flex-1 bg-white/70 rounded-xl px-4 py-3 border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                                        required placeholder="Enter amount">
-                                    <span class="text-gray-600 font-medium">TRX</span>
-                                </div>
+                        <div>
+                            <label class="text-sm text-gray-600">Total Earned</label>
+                            <div class="text-2xl font-bold text-gray-800">
+                                @php
+                                    $totalEarned = auth()->user()->stakings ?
+                                        auth()->user()->stakings->sum('earned_amount') : 0;
+                                @endphp
+                                {{ number_format($totalEarned, 6) }} TRX
                             </div>
-                            <button type="submit"
-                                class="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                                Stake Now
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Activity Section -->
-        <div class="group relative">
-            <div class="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-3xl blur opacity-10 group-hover:opacity-20 transition-opacity"></div>
-            <div class="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-xl">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900">Recent Activity</h2>
-                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                        </svg>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-600">APY</label>
+                            <div class="text-2xl font-bold text-emerald-600">300%</div>
+                        </div>
                     </div>
                 </div>
 
+                <!-- MilesCoin Balance Section -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">MilesCoin Balance</h2>
+                    <div class="bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-3xl font-bold text-purple-800">
+                                    {{ number_format(auth()->user()->wallet->miles_balance ?? 0, 6) }} MSC
+                                </p>
+                                <p class="text-sm text-gray-600 mt-1">Available for staking</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Convert TRX to MilesCoin Section -->
+            <div class="mt-8 bg-gradient-to-br from-blue-50 to-red-50 rounded-xl p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Convert TRX to MilesCoin</h3>
                 <div class="space-y-4">
-                    <!-- Placeholder for recent transactions -->
-                    <div class="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Staking Rewards</p>
-                                <p class="text-sm text-gray-500">Daily rewards credited</p>
-                            </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="flex-1">
+                            <label for="convert-amount" class="block text-sm text-gray-600 mb-2">Amount to Convert</label>
+                            <input type="number" id="convert-amount"
+                                class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                step="0.000001" min="1" placeholder="Enter TRX amount">
                         </div>
-                        <div class="text-right">
-                            <p class="font-semibold text-green-600">+12.45 TRX</p>
-                            <p class="text-xs text-gray-500">2 hours ago</p>
+                        <div class="pt-8">
+                            <button onclick="checkAndConvert()"
+                                class="bg-gradient-to-r from-blue-600 to-red-600 hover:from-blue-700 hover:to-red-700 text-white px-6 py-2 rounded-lg transition-all transform hover:scale-105">
+                                Convert to MilesCoin
+                            </button>
                         </div>
                     </div>
-
-                    <div class="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Staking Deposit</p>
-                                <p class="text-sm text-gray-500">New stake created</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-semibold text-blue-600">500 TRX</p>
-                            <p class="text-xs text-gray-500">1 day ago</p>
-                        </div>
-                    </div>
-
-                    <div class="text-center py-4">
-                        <p class="text-gray-500 text-sm">More detailed activity tracking coming soon</p>
-                    </div>
+                    <div id="conversion-status" class="text-sm"></div>
                 </div>
+            </div>
+
+            <!-- Staking Form -->
+            <div class="mt-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Stake TRX</h3>
+                <form action="{{ route('stake') }}" method="POST" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label for="amount" class="block text-sm text-gray-600 mb-2">Amount to Stake</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="amount" name="amount" step="0.000001" min="1"
+                                class="flex-1 rounded-lg border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                required>
+                            <span class="text-gray-600">TRX</span>
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-gradient-to-r from-blue-600 to-red-600 hover:from-blue-700 hover:to-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105">
+                        Stake Now
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -679,101 +514,4 @@ async function checkAndConvert() {
     }
 }
 </script>
-
-<style>
-/* Mobile-First Responsive Enhancements */
-@media (max-width: 640px) {
-    .grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .text-3xl {
-        font-size: 1.875rem;
-    }
-    
-    .text-2xl {
-        font-size: 1.5rem;
-    }
-    
-    .px-8 {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-    
-    .py-8 {
-        padding-top: 1.5rem;
-        padding-bottom: 1.5rem;
-    }
-}
-
-/* Touch-friendly button sizing */
-button, input[type="submit"] {
-    min-height: 48px;
-    min-width: 48px;
-}
-
-/* Improved focus states for accessibility */
-button:focus, input:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-}
-
-/* Smooth transitions for better UX */
-* {
-    transition: all 0.2s ease-in-out;
-}
-
-/* Neumorphism effects */
-.neumorphism {
-    background: linear-gradient(145deg, #ffffff, #f0f0f0);
-    box-shadow: 20px 20px 60px #d0d0d0, -20px -20px 60px #ffffff;
-}
-
-.neumorphism-inset {
-    background: linear-gradient(145deg, #f0f0f0, #ffffff);
-    box-shadow: inset 20px 20px 60px #d0d0d0, inset -20px -20px 60px #ffffff;
-}
-
-/* Glassmorphism effects */
-.glassmorphism {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-/* Loading animations */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-.loading {
-    animation: pulse 2s infinite;
-}
-
-/* Card hover effects */
-.hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-/* Improved scrollbar styling */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(45deg, #2563eb, #7c3aed);
-}
-</style>
 @endsection
